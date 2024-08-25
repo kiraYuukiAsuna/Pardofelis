@@ -13,10 +13,11 @@ public class LLMController : ControllerBase
 {
     private readonly Serilog.ILogger _logger;
 
-    private readonly List<LlmModelConfig> _settings;
+    private readonly LlmModelConfigList _settings;
 
     public LLMController()
     {
+        _settings = new LlmModelConfigList();
         Log.Information("LLMController init");
         _logger = new LoggerConfiguration().WriteTo.Console()
             .WriteTo.File(Path.Join(CommonConfig.LogRootPath, "LogLLMController.txt"),
@@ -24,7 +25,7 @@ public class LLMController : ControllerBase
             .CreateLogger();
 
         LlmModelConfigList config = LlmModelConfigList.ReadConfig();
-        _settings = config.Models;
+        _settings.Models = config.Models;
     }
 
     /// 返回模型的基本信息
@@ -41,7 +42,7 @@ public class LLMController : ControllerBase
     {
         return new ConfigModels
         {
-            Models = _settings,
+            Models = _settings.Models,
             Loaded = GlobalConfig.Instance.IsModelLoaded,
             Current = GlobalConfig.Instance.CurrentModelIndex
         };
@@ -51,7 +52,7 @@ public class LLMController : ControllerBase
     [HttpPut("/models/{modelId}/switch")]
     public IActionResult SwitchModel(int modelId)
     {
-        if (modelId < 0 || modelId >= _settings.Count)
+        if (modelId < 0 || modelId >= _settings.Models.Count)
         {
             return BadRequest("Invalid model id");
         }

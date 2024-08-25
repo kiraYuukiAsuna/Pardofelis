@@ -18,10 +18,11 @@ namespace PardofelisCore.LlmController.LlamaSharpWrapper.Service;
 public class LlmModelService : ILlmModelService
 {
     private readonly Serilog.ILogger _logger;
-    private readonly List<LlmModelConfig> _settings;
+    private readonly LlmModelConfigList _settings;
     private readonly ToolPromptGenerator _toolPromptGenerator;
     private LlmModelConfig _usedset;
     private LLamaWeights _model;
+    private LLamaWeights _embeddingModel;
     private LLamaEmbedder? _embedder;
 
     // 已加载模型ID，-1表示未加载
@@ -34,10 +35,25 @@ public class LlmModelService : ILlmModelService
         Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
     };
 
+    public LlmModelService()
+    {
+        _settings = LlmModelConfigList.ReadConfig();
+        _logger = new LoggerConfiguration().WriteTo.Console()
+            .WriteTo.File(Path.Join(CommonConfig.LogRootPath, "LogLlmModelService.txt"),
+                rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+        _toolPromptGenerator = new ToolPromptGenerator();
+        InitModelIndex();
+        if (_usedset == null || _model == null)
+        {
+            throw new InvalidOperationException("Failed to initialize the model.");
+        }
+    }
+    
     /// 初始化指定模型
     public void InitModelIndex()
     {
-        if (_settings.Count == 0)
+        if (_settings.Models.Count == 0)
         {
             _logger.Error("No model settings.");
             throw new ArgumentException("No model settings.");
@@ -53,18 +69,18 @@ public class LlmModelService : ILlmModelService
             return;
         }
 
-        if (loadModelIndex < 0 || loadModelIndex >= _settings.Count)
+        if (loadModelIndex < 0 || loadModelIndex >= _settings.Models.Count)
         {
             _logger.Error("Invalid model index: {modelIndex}.", loadModelIndex);
             throw new ArgumentException("Invalid model index.");
         }
 
-        var usedset = _settings[loadModelIndex];
+        var usedset = _settings.Models[loadModelIndex];
 
-        if (string.IsNullOrWhiteSpace(usedset.LlmModelParams.ModelPath) ||
-            !File.Exists(usedset.LlmModelParams.ModelPath))
+        if (string.IsNullOrWhiteSpace(LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath) ||
+            !File.Exists(LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath))
         {
-            _logger.Error("Model path is error: {path}.", usedset.LlmModelParams.ModelPath);
+            _logger.Error("Model path is error: {path}.", LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath);
             throw new ArgumentException("Model path is error.");
         }
 
@@ -72,29 +88,22 @@ public class LlmModelService : ILlmModelService
         DisposeModel();
 
         _model = LLamaWeights.LoadFromFile(LlmModelParams.ToModelParams(usedset.LlmModelParams));
-        if (LlmModelParams.ToModelParams(usedset.LlmModelParams).Embeddings)
+        
+        var embeddingParams = new ModelParams(Path.Join(CommonConfig.EmbeddingModelRootPath, _settings.EmbeddingModelFileName))
+        {
+            Embeddings = true
+        };
+        _embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
+        _embedder = new LLamaEmbedder(_embeddingModel, embeddingParams);
+        
+        /*if (LlmModelParams.ToModelParams(usedset.LlmModelParams).Embeddings)
         {
             _embedder = new LLamaEmbedder(_model, LlmModelParams.ToModelParams(usedset.LlmModelParams));
-        }
+        }*/
 
         _usedset = usedset;
         _loadModelIndex = loadModelIndex;
         GlobalConfig.Instance.IsModelLoaded = true;
-    }
-
-    public LlmModelService()
-    {
-        _logger = new LoggerConfiguration().WriteTo.Console()
-            .WriteTo.File(Path.Join(CommonConfig.LogRootPath, "LogLlmModelService.txt"),
-                rollingInterval: RollingInterval.Day)
-            .CreateLogger();
-        _settings = LlmModelConfigList.ReadConfig().Models;
-        _toolPromptGenerator = new ToolPromptGenerator();
-        InitModelIndex();
-        if (_usedset == null || _model == null)
-        {
-            throw new InvalidOperationException("Failed to initialize the model.");
-        }
     }
 
     /// 获取模型信息
@@ -518,11 +527,11 @@ public class LlmModelService : ILlmModelService
             return new EmbeddingResponse();
         }
 
-        if (!LlmModelParams.ToModelParams(_usedset.LlmModelParams).Embeddings)
+        /*if (!LlmModelParams.ToModelParams(_usedset.LlmModelParams).Embeddings)
         {
             _logger.Warning("Model does not support embeddings.");
             return new EmbeddingResponse();
-        }
+        }*/
 
         if (_embedder == null)
         {
@@ -548,7 +557,8 @@ public class LlmModelService : ILlmModelService
     }
 
     /// 是否支持嵌入
-    public bool IsSupportEmbedding => LlmModelParams.ToModelParams(_usedset.LlmModelParams).Embeddings;
+    // public bool IsSupportEmbedding => LlmModelParams.ToModelParams(_usedset.LlmModelParams).Embeddings;
+    public bool IsSupportEmbedding => _embedder != null;
 
     #endregion
 

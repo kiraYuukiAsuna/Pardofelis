@@ -1,0 +1,37 @@
+{
+  "Models": [
+    {
+      "Name": "qwen2_7b",
+      "Description": "通义千问 v2 7b instruct q4_k_m",
+      "WebSite": "https://github.com/QwenLM/Qwen2",
+      "Version": "2",
+      "SystemPrompt": "You are a helpful assistant",
+      "LlmModelParams": {
+        "ContextSize": 30000,
+        "MainGpu": 0,
+        "GpuLayerCount": 29,
+        "Seed": 1111,
+        "UseMemoryMap": true,
+        "UseMemoryLock": true,
+        "ModelFileName": "qwen2-7b-instruct-q4_k_m.gguf",
+        "Threads": 8,
+        "BatchThreads": 8,
+        "BatchSize": 512,
+        "UBatchSize": 512
+      },
+      "WithTransform": {
+        "HistoryTransform": "PardofelisCore.LlmController.LlamaSharpWrapper.Transform.BaseHistoryTransform",
+        "OutputTransform": null
+      },
+      "AntiPrompts": [
+        "<|im_start|>",
+        "<|im_end|>"
+      ],
+      "ToolPrompt": {
+        "Index": 2,
+        "Lang": "zh"
+      }
+    }
+  ],
+  "EmbeddingModelFileName": "zpoint_large_embedding_zh.gguf"
+}

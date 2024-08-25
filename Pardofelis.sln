@@ -4,6 +4,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PardofelisCore", "Pardofeli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PardofelisRunner", "PardofelisRunner\PardofelisRunner.csproj", "{3FC3B30D-BBB3-43D4-9499-89AC06BBCD2D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionCall", "Test\FunctionCall\FunctionCall.csproj", "{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionCallStream", "Test\FunctionCallStream\FunctionCallStream.csproj", "{17D659C8-17BA-4A99-8540-4921863DD30A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple", "Test\Simple\Simple.csproj", "{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlamaSharpChatWebUI", "LlamaSharpChatWebUI\LlamaSharpChatWebUI.csproj", "{271F7532-8DE1-4C85-9682-A19C62B944B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +28,26 @@ Global
 		{3FC3B30D-BBB3-43D4-9499-89AC06BBCD2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FC3B30D-BBB3-43D4-9499-89AC06BBCD2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FC3B30D-BBB3-43D4-9499-89AC06BBCD2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17D659C8-17BA-4A99-8540-4921863DD30A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17D659C8-17BA-4A99-8540-4921863DD30A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17D659C8-17BA-4A99-8540-4921863DD30A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17D659C8-17BA-4A99-8540-4921863DD30A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{271F7532-8DE1-4C85-9682-A19C62B944B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{271F7532-8DE1-4C85-9682-A19C62B944B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{271F7532-8DE1-4C85-9682-A19C62B944B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{271F7532-8DE1-4C85-9682-A19C62B944B4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9A5D0295-BEF0-4D04-961A-0BEE1130C27F} = {90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}
+		{17D659C8-17BA-4A99-8540-4921863DD30A} = {90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}
+		{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED} = {90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}
 	EndGlobalSection
 EndGlobal

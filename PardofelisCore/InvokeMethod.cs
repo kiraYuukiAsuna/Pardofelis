@@ -11,7 +11,7 @@ using PardofelisCore.Logger;
 
 namespace PardofelisCore;
 
-public static class Class1
+public static class InvokeMethod
 {
     public static void Run()
     {
@@ -92,7 +92,7 @@ public static class Class1
         builder.Services.AddHttpClient();
 
         var app = builder.Build();
-        app.Urls.Add("http://127.0.0.1:9090");
+        app.Urls.Add("http://127.0.0.1:14251");
 
         app.UseCors();
 

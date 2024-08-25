@@ -52,7 +52,7 @@ public class EmbeddingController : ControllerBase
             else
             {
                 // 转发请求
-                var url = "http://127.0.0.1:5000/embeddings";
+                var url = "http://127.0.0.1:14250/embeddings";
 
                 if (string.IsNullOrEmpty(url))
                 {

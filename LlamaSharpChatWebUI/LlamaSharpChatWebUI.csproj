@@ -8,13 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\PardofelisCore\PardofelisCore.csproj" />
+        <PackageReference Include="Gradio.Net.AspNetCore" Version="0.1.6"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="..\version.json">
-        <Link>version.json</Link>
-      </Content>
+      <ProjectReference Include="..\PardofelisCore\PardofelisCore.csproj" />
     </ItemGroup>
-
+    
 </Project>

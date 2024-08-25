@@ -39,6 +39,9 @@ public class LlmModelConfigList
 {
     public List<LlmModelConfig> Models { get; set; } = new();
 
+    /// Embedding模型
+    public string EmbeddingModelFileName { get; set; } = "";
+    
     [JsonIgnore]
     private static string ConfigFilePath = Path.Join(CommonConfig.ConfigRootPath, "LlmModelConfig.json");
 
@@ -98,9 +101,6 @@ public class ConfigModels
 
     /// 模型列表
     public List<LlmModelConfig>? Models { get; set; }
-    
-    /// Embedding模型 TODO
-    public string EmbeddingModelPath { get; set; } = "";
 }
 
 public class LlmModelParams
@@ -111,7 +111,7 @@ public class LlmModelParams
     public uint Seed { get; set; } = 1111;
     public bool UseMemoryMap { get; set; } = true;
     public bool UseMemoryLock { get; set; } = true;
-    public string ModelPath { get; set; } = "";
+    public string ModelFileName { get; set; } = "";
     public uint Threads { get; set; } = 8;
     public uint BatchThreads { get; set; } = 8;
     public uint BatchSize { get; set; } = 512u;
@@ -119,7 +119,7 @@ public class LlmModelParams
 
     public static ModelParams ToModelParams(LlmModelParams llmModelParams)
     {
-        var modelParams = new ModelParams(Path.Join(CommonConfig.ModelRootPath,llmModelParams.ModelPath));
+        var modelParams = new ModelParams(Path.Join(CommonConfig.ModelRootPath,llmModelParams.ModelFileName));
         modelParams.ContextSize = llmModelParams.ContextSize;
         modelParams.MainGpu = llmModelParams.MainGpu;
         modelParams.GpuLayerCount = llmModelParams.GpuLayerCount;
@@ -142,7 +142,7 @@ public class LlmModelParams
         llmModelParams.Seed = modelParams.Seed ?? 1111;
         llmModelParams.UseMemoryMap = modelParams.UseMemorymap;
         llmModelParams.UseMemoryLock = modelParams.UseMemoryLock;
-        llmModelParams.ModelPath = modelParams.ModelPath;
+        llmModelParams.ModelFileName = Path.GetFileName(modelParams.ModelPath);
         llmModelParams.Threads = modelParams.Threads ?? 8;
         llmModelParams.BatchThreads = modelParams.BatchThreads ?? 8;
         llmModelParams.BatchSize = modelParams.BatchSize;
