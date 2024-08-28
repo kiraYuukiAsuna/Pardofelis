@@ -9,7 +9,7 @@
       "LlmModelParams": {
         "ContextSize": 30000,
         "MainGpu": 0,
-        "GpuLayerCount": 29,
+        "GpuLayerCount": 28,
         "Seed": 1111,
         "UseMemoryMap": true,
         "UseMemoryLock": true,

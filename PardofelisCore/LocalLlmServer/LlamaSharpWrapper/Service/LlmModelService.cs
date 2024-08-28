@@ -472,7 +472,7 @@ public class LlmModelService : ILlmModelService
             messages = messages.Prepend(new ChatCompletionMessage
             {
                 role = "system",
-                content = toolPrompt
+                content = _usedset.SystemPrompt
             }).ToArray();
         }
 
@@ -709,7 +709,7 @@ public class LlmModelService : ILlmModelService
 
         InferenceParams inferenceParams = new InferenceParams()
         {
-            MaxTokens = request.max_tokens.HasValue && request.max_tokens.Value > 0 ? request.max_tokens.Value : 512,
+            MaxTokens = request.max_tokens.HasValue && request.max_tokens.Value > 0 ? request.max_tokens.Value : Int32.MaxValue,
             AntiPrompts = stop,
             Temperature = request.temperature,
             TopP = request.top_p,

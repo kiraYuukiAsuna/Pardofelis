@@ -22,7 +22,7 @@ namespace FunctionCall.Agent
             // 添加使用收件人电子邮件、主题和正文发送电子邮件的逻辑
             // 目前，我们只会在控制台打印出成功消息
             Console.WriteLine("电子邮件已发送！");
-            return "发送失败，网络错误，无法连接到服务器";
+            return "发送成功，";
         }
     }
 }
