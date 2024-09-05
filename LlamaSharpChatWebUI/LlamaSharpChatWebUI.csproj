@@ -8,11 +8,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Gradio.Net.AspNetCore" Version="0.1.6"/>
+        <PackageReference Include="Gradio.Net.AspNetCore" Version="0.1.6" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\PardofelisCore\PardofelisCore.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.77-alpha" />
     </ItemGroup>
     
 </Project>

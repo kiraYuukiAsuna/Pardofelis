@@ -1,7 +1,6 @@
-﻿using System;
-using Microsoft.SemanticKernel;
+﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
-using System.Threading.Tasks;
+using MimeKit;
 
 namespace FunctionCall.Agent
 {
@@ -20,9 +19,49 @@ namespace FunctionCall.Agent
             Console.WriteLine($"主题：{subject}");
             Console.WriteLine($"正文：{body}");
             // 添加使用收件人电子邮件、主题和正文发送电子邮件的逻辑
-            // 目前，我们只会在控制台打印出成功消息
-            Console.WriteLine("电子邮件已发送！");
-            return "发送成功，";
+
+            var emails = recipientEmails.Split(',');
+            foreach (var email in emails)
+            {
+                var emailSender = new EmailSender("smtp.qq.com", 465, "1175445708@qq.com", "esietlytzouojegf");
+                await emailSender.SendEmailAsync(email, subject, body);
+                Console.WriteLine("电子邮件已发送！");
+            }
+
+            return "发送电子邮件成功，发送给了 " + recipientEmails + "。";
+        }
+    }
+
+    class EmailSender
+    {
+        private readonly string _smtpServer;
+        private readonly int _smtpPort;
+        private readonly string _smtpUser;
+        private readonly string _smtpPass;
+
+        public EmailSender(string smtpServer, int smtpPort, string smtpUser, string smtpPass)
+        {
+            _smtpServer = smtpServer;
+            _smtpPort = smtpPort;
+            _smtpUser = smtpUser;
+            _smtpPass = smtpPass;
+        }
+
+        public async Task SendEmailAsync(string recipientEmail, string subject, string body)
+        {
+            var emailMessage = new MimeMessage();
+            emailMessage.From.Add(new MailboxAddress("", _smtpUser));
+            emailMessage.To.Add(new MailboxAddress("", recipientEmail));
+            emailMessage.Subject = subject;
+            emailMessage.Body = new TextPart("html") { Text = body };
+
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
+            {
+                await client.ConnectAsync(_smtpServer, _smtpPort, true);
+                await client.AuthenticateAsync(_smtpUser, _smtpPass);
+                await client.SendAsync(emailMessage);
+                await client.DisconnectAsync(true);
+            }
         }
     }
 }

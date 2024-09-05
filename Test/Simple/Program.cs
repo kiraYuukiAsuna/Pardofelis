@@ -9,7 +9,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 var builder = Kernel.CreateBuilder();
 builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
-builder.AddOpenAIChatCompletion("default", new OpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
+builder.AddOpenAIChatCompletion("default", new AzureOpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
 
 var kernel = builder.Build();
 

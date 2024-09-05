@@ -542,7 +542,7 @@ public class LlmModelService : ILlmModelService
         foreach (var text in request.input)
         {
             var embedding = await _embedder.GetEmbeddings(text, cancellationToken);
-            embeddings.Add(embedding);
+            embeddings.AddRange(embedding);
         }
 
         return new EmbeddingResponse

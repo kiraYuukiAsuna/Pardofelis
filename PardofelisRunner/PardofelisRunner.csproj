@@ -17,4 +17,8 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.77-alpha" />
+    </ItemGroup>
+
 </Project>

@@ -5,8 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using Microsoft.SemanticKernel.Plugins.Web;
-using Microsoft.SemanticKernel.Plugins.Web.Bing;
 
 /*/// <summary>
 /// The example shows how to use Bing and Google to search for current data
@@ -160,10 +158,11 @@ public class BingAndGooglePlugins
 var builder = Kernel.CreateBuilder();
 builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
-builder.AddOpenAIChatCompletion("gpt-4o", new OpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
+builder.AddOpenAIChatCompletion("gpt-4o", new AzureOpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
 
 builder.Plugins.AddFromType<EmailPlugin>();
 builder.Plugins.AddFromType<WeatherPlugin>();
+builder.Plugins.AddFromType<BrainRegionPlugin>();
 
 var kernel = builder.Build();
 
