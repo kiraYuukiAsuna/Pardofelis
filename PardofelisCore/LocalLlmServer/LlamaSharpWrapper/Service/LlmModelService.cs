@@ -179,7 +179,7 @@ public class LlmModelService : ILlmModelService
                             }
                         }
                     ],
-                    usage = new TokenUsageInfo
+                    usage = new UsageInfo
                     {
                         prompt_tokens = prompt_tokens,
                         completion_tokens = completion_tokens,
@@ -206,7 +206,7 @@ public class LlmModelService : ILlmModelService
                     }
                 }
             ],
-            usage = new TokenUsageInfo
+            usage = new UsageInfo
             {
                 prompt_tokens = prompt_tokens,
                 completion_tokens = completion_tokens,
@@ -600,7 +600,7 @@ public class LlmModelService : ILlmModelService
                     text = result.ToString()
                 }
             },
-            usage = new TokenUsageInfo
+            usage = new UsageInfo
             {
                 prompt_tokens = prompt_tokens,
                 completion_tokens = completion_tokens,

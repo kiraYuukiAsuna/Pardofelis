@@ -56,11 +56,20 @@ public class LlmModelConfigList
             File.WriteAllText(ConfigFilePath, json);
             return newConfig;
         }
-
-        var config = JsonConvert.DeserializeObject<LlmModelConfigList>(File.ReadAllText(ConfigFilePath));
-        File.WriteAllText(ConfigFilePath, JsonConvert.SerializeObject(config, Formatting.Indented));
-        Log.Information("Read config {0} info: {1}", ConfigFilePath, config);
-        return config;
+        var a = File.ReadAllText(ConfigFilePath);
+        try
+        {
+            var config = JsonConvert.DeserializeObject<LlmModelConfigList>(a);
+            File.WriteAllText(ConfigFilePath, JsonConvert.SerializeObject(config, Formatting.Indented));
+            Log.Information("Read config {0} info: {1}", ConfigFilePath, config);
+            return config;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to read config file {0}.", ConfigFilePath);
+            return new LlmModelConfigList();
+        }
+       
     }
 
     public static void WriteConfig(LlmModelConfigList config)

@@ -10,7 +10,6 @@
       <PackageReference Include="Gradio.Net.AspNetCore" Version="0.1.6" />
       <PackageReference Include="LLamaSharp" Version="0.16.0" />
       <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.16.0" />
-      <PackageReference Include="Microsoft.SemanticKernel" Version="1.18.2" />
       <PackageReference Include="Nerdbank.GitVersioning" Version="3.7.77-alpha">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

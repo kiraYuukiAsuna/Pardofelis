@@ -158,7 +158,7 @@ public class BingAndGooglePlugins
 var builder = Kernel.CreateBuilder();
 builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
-builder.AddOpenAIChatCompletion("gpt-4o", new AzureOpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
+builder.AddOpenAIChatCompletion("gpt-4o", new OpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
 
 builder.Plugins.AddFromType<EmailPlugin>();
 builder.Plugins.AddFromType<WeatherPlugin>();

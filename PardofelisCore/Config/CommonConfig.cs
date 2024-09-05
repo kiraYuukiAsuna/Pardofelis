@@ -4,7 +4,7 @@ public static class CommonConfig
 {
     public static string CurrentWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
     
-    public static string PardofelisAppDataPath = "E:\\Pardofelis\\Pardofelis\\PardofelisAppData";
+    public static string PardofelisAppDataPath = "D:\\Dev\\Pardofelis\\PardofelisAppData";
     public static string LogRootPath = Path.Join(PardofelisAppDataPath, "Log");
     public static string ModelRootPath = Path.Join(PardofelisAppDataPath, "LlmModel");
     public static string EmbeddingModelRootPath = Path.Join(PardofelisAppDataPath, "EmbeddingModel");
