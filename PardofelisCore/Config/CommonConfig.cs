@@ -7,7 +7,7 @@ public static class CommonConfig
     public static string PardofelisAppDataPath = "D:\\Dev\\Pardofelis\\PardofelisAppData";
     public static string LogRootPath = Path.Join(PardofelisAppDataPath, "Log");
     public static string ModelRootPath = Path.Join(PardofelisAppDataPath, "LlmModel");
-    public static string EmbeddingModelRootPath = Path.Join(PardofelisAppDataPath, "EmbeddingModel");
+    public static string EmbeddingModelRootPath = Path.Join(PardofelisAppDataPath, "LlmModel");
     public static string ConfigRootPath = Path.Join(PardofelisAppDataPath, "Config");
 
 

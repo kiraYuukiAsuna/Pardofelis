@@ -9,8 +9,8 @@
       "LlmModelParams": {
         "ContextSize": 30000,
         "MainGpu": 0,
-        "GpuLayerCount": 28,
-        "Seed": 1111,
+        "GpuLayerCount": 29,
+        "Seed": 521,
         "UseMemoryMap": true,
         "UseMemoryLock": true,
         "ModelFileName": "qwen2-7b-instruct-q4_k_m.gguf",
@@ -33,5 +33,30 @@
       }
     }
   ],
-  "EmbeddingModelFileName": "zpoint_large_embedding_zh.gguf"
+  "EmbeddingModelConfig": {
+    "Name": "zpoint_large_embedding_zh",
+    "Description": "zpoint_large_embedding_zh",
+    "WebSite": "https://huggingface.co/iecjsu/zpoint_large_embedding_zh/blob/main/zpoint_large_embedding_zh.gguf",
+    "Version": "1",
+    "SystemPrompt": null,
+    "LlmModelParams": {
+      "ContextSize": 30000,
+      "MainGpu": 0,
+      "GpuLayerCount": 25,
+      "Seed": 521,
+      "UseMemoryMap": true,
+      "UseMemoryLock": true,
+      "ModelFileName": "zpoint_large_embedding_zh.gguf",
+      "Threads": 8,
+      "BatchThreads": 8,
+      "BatchSize": 512,
+      "UBatchSize": 512
+    },
+    "WithTransform": null,
+    "AntiPrompts": null,
+    "ToolPrompt": {
+      "Index": 0,
+      "Lang": "en"
+    }
+  }
 }

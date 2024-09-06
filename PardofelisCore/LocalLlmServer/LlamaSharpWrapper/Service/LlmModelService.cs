@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using LLama;
 using LLama.Common;
+using LLama.Native;
 using LLama.Sampling;
 using PardofelisCore.Config;
 using PardofelisCore.LlmController.LlamaSharpWrapper.FunctionCall;
@@ -88,11 +89,14 @@ public class LlmModelService : ILlmModelService
         DisposeModel();
 
         _model = LLamaWeights.LoadFromFile(LlmModelParams.ToModelParams(usedset.LlmModelParams));
-        
-        var embeddingParams = new ModelParams(Path.Join(CommonConfig.EmbeddingModelRootPath, _settings.EmbeddingModelFileName))
+
+        var embeddingParams = LlmModelParams.ToModelParams(usedset.LlmModelParams);
+        embeddingParams.PoolingType = LLamaPoolingType.Mean;
+        /*var embeddingParams = new ModelParams(Path.Join(CommonConfig.EmbeddingModelRootPath, _settings.EmbeddingModelConfig.LlmModelParams.ModelFileName))
         {
-            Embeddings = true
-        };
+            PoolingType = LLamaPoolingType.Mean,
+            
+        };*/
         _embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
         _embedder = new LLamaEmbedder(_embeddingModel, embeddingParams);
         

@@ -40,7 +40,7 @@ public class LlmModelConfigList
     public List<LlmModelConfig> Models { get; set; } = new();
 
     /// Embedding模型
-    public string EmbeddingModelFileName { get; set; } = "";
+    public LlmModelConfig EmbeddingModelConfig { get; set; } = new();
     
     [JsonIgnore]
     private static string ConfigFilePath = Path.Join(CommonConfig.ConfigRootPath, "LlmModelConfig.json");
