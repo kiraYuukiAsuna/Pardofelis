@@ -6,7 +6,7 @@ POST {{HostAddress}}/v1/embeddings
 Content-Type: application/json
 
 {
-  "input": "The food was delicious and the waiter...",
+  "input": "我喜欢你，你喜欢我吗？",
   "model": "zpoint",
   "encoding_format": "float"
 }

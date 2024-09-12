@@ -11,7 +11,7 @@ namespace FunctionCall;
 
 public class Rag
 {
-    public static async Task InsertTextChunkAsync(ISemanticTextMemory textMemory, string collection, string text)
+    public static async Task InsertTextChunkAsync(ISemanticTextMemory textMemory, string collection, string text, string additionalMetaData)
     {
         if (string.IsNullOrEmpty(collection) || string.IsNullOrEmpty(text))
         {
@@ -23,18 +23,18 @@ public class Rag
 
         foreach (var para in paragraphs)
         {
-            await textMemory.SaveInformationAsync(collection, id: Guid.NewGuid().ToString(), text: para,
+            await textMemory.SaveInformationAsync(collection, para, Guid.NewGuid().ToString(), additionalMetadata: additionalMetaData,
                 cancellationToken: default);
         }
     }
 
-    public static async Task<List<string>> VectorSearch(ISemanticTextMemory textMemory, string collection, string text)
+    public static async Task<List<KeyValuePair<string,string>>> VectorSearch(ISemanticTextMemory textMemory, string collection, string text)
     {
-        var memoryResult = textMemory.SearchAsync(collection, text, 3, default);
-        List<string> results = new List<string>();
+        var memoryResult = textMemory.SearchAsync(collection, text, 16, 0.7);
+        List<KeyValuePair<string, string>> results = new();
         await foreach (var item in memoryResult)
         {
-            results.Add(item.Metadata.Text);
+            results.Add(new KeyValuePair<string, string>(item.Metadata.Text, item.Metadata.AdditionalMetadata));
         }
 
         return results;

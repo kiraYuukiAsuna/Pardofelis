@@ -1,5 +1,4 @@
-﻿using Azure.AI.OpenAI;
-using FunctionCall;
+﻿using FunctionCall;
 using FunctionCall.Agent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -167,10 +166,12 @@ public class BingAndGooglePlugins
 var builder = Kernel.CreateBuilder();
 builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
+
 /*
 builder.AddOpenAIChatCompletion("gpt-4o",
     new OpenAIClient(new Uri("http://127.0.0.1:14251"), new Azure.AzureKeyCredential("key")));
     */
+
 
 builder.AddOpenAIChatCompletion("gpt-4o-mini",
     "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
@@ -181,6 +182,7 @@ builder.AddOpenAIChatCompletion("gpt-4o-mini",
 builder.Plugins.AddFromType<EmailPlugin>();
 builder.Plugins.AddFromType<WeatherPlugin>();
 builder.Plugins.AddFromType<BrainRegionPlugin>();
+builder.Plugins.AddFromType<Sing>();
 
 var kernel = builder.Build();
 
@@ -193,7 +195,8 @@ IMemoryStore memoryStore = await SqliteMemoryStore.ConnectAsync("memstore.db");
 memoryBuilder.WithMemoryStore(memoryStore);
 var TextMemory = memoryBuilder.Build();
 
-/*await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-04 8:12 今天天气：多云 节日：无");
+/*
+await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-04 8:12 今天天气：多云 节日：无");
 await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-04 8:12 [说话人(爱莉）]：舰长初次见面，我是爱莉希雅！[对话人(舰长）]");
 await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-04 8:12 [说话人(舰长）]：你好，在休伯利安感觉如何？ [对话人(爱莉）]");
 await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-04 8:12 [说话人(爱莉）]：非常不错呢！[对话人(舰长）]");
@@ -206,7 +209,8 @@ await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-05 13:12 [说话�
 await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-06 20:12 今天天气：晴天 节日：中秋节");
 await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-06 20:12 [说话人(爱莉）]：舰长今天是晚上才来看我呢，事物繁忙吗？ [对话人(舰长）]");
 await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-06 20:12 [说话人(舰长）]：是啊，白天要工作，不是舰上的工作  [对话人(爱莉）]");
-await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-06 20:12 [说话人(爱莉）]：舰长好辛苦呢！ [对话人(舰长）]");*/
+await Rag.InsertTextChunkAsync(TextMemory, "记忆", "2024-09-06 20:12 [说话人(爱莉）]：舰长好辛苦呢！ [对话人(舰长）]");
+*/
 
 IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
 
@@ -219,10 +223,11 @@ while (true)
     string messageUser = Console.ReadLine()!;
     chatMessages.AddUserMessage(messageUser);
 
-    var vectorSearch = await Rag.VectorSearch(TextMemory,"记忆", messageUser);
+    var vectorSearch = await Rag.VectorSearch(TextMemory, "记忆", messageUser);
 
-    string systemPrompt = "下面我们要进行角色扮演，你的名字叫{}，人物设定是：{人物设定},你正在对话的人的名字是{舰长} ，现在是{2024-09-06 20：46}，你之后回复的有关时间的文本都要以相对时刻说出，例如今天是9月15日，9月14日就要用昨天代替，" +
-                          "获取到的历史相关信息如下，格式是类似于 2024-09-05 20:12 说话人（爱莉）：今天你吃了吗？对话人：（希儿）的格式，括号里的内容是名字，你需要根据人物设定判断是谁说的话：";
+    string systemPrompt =
+        "下面我们要进行角色扮演，你的名字叫{爱莉}，人物设定是：{人物设定},你正在对话的人的名字是{舰长} ，现在是{2024-09-06 20：46}，你之后回复的有关时间的文本都要以相对时刻说出，例如今天是9月15日，9月14日就要用昨天代替，" +
+        "获取到的历史相关信息如下，格式是类似于 2024-09-05 20:12 说话人（爱莉）：今天你吃了吗？对话人：（希儿）的格式，括号里的内容是名字，你需要根据人物设定判断是谁说的话：";
     foreach (var message in vectorSearch)
     {
         systemPrompt += message;
@@ -230,7 +235,7 @@ while (true)
 
     systemPrompt += "根据上述信息进行角色扮演，并在适当的时候调用工具，当没有显式说出调用工具的名称时不要去调用工具，调用工具的参数不能凭空捏造，在工具调用信息缺失时你会继续提问直到满足调用该工具的参数要求。";
 
-    
+
     OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
     {
         ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
@@ -242,7 +247,6 @@ while (true)
         executionSettings: openAIPromptExecutionSettings,
         kernel: kernel);
 
-    string fullMessage = "";
     System.Console.Write("Assistant > ");
     Console.WriteLine(result.Result.FirstOrDefault()?.Content);
     System.Console.WriteLine();

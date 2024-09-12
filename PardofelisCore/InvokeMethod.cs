@@ -13,6 +13,8 @@ namespace PardofelisCore;
 
 public static class InvokeMethod
 {
+    private static IHostApplicationLifetime AppLifetime;
+
     public static void Run()
     {
         GlobalLogger.Initialize();
@@ -92,6 +94,9 @@ public static class InvokeMethod
         builder.Services.AddHttpClient();
 
         var app = builder.Build();
+
+        AppLifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+
         app.Urls.Add("http://127.0.0.1:14251");
 
         app.UseCors();
@@ -135,5 +140,10 @@ public static class InvokeMethod
         app.MapControllers();
 
         app.Run();
+    }
+
+    public static void Stop()
+    {
+        AppLifetime.StopApplication();
     }
 }

@@ -19,16 +19,17 @@ namespace FunctionCall.Agent
             Console.WriteLine($"主题：{subject}");
             Console.WriteLine($"正文：{body}");
             // 添加使用收件人电子邮件、主题和正文发送电子邮件的逻辑
-
+            
+            string result = "";
             var emails = recipientEmails.Split(',');
             foreach (var email in emails)
             {
                 var emailSender = new EmailSender("smtp.qq.com", 465, "1175445708@qq.com", "esietlytzouojegf");
-                await emailSender.SendEmailAsync(email, subject, body);
+                result = await emailSender.SendEmailAsync(email, subject, body);
                 Console.WriteLine("电子邮件已发送！");
             }
 
-            return "发送电子邮件成功，发送给了 " + recipientEmails + "。";
+            return "发送电子邮件成功，发送给了 " + recipientEmails + "。" + result;
         }
     }
 
@@ -47,7 +48,7 @@ namespace FunctionCall.Agent
             _smtpPass = smtpPass;
         }
 
-        public async Task SendEmailAsync(string recipientEmail, string subject, string body)
+        public async Task<string> SendEmailAsync(string recipientEmail, string subject, string body)
         {
             var emailMessage = new MimeMessage();
             emailMessage.From.Add(new MailboxAddress("", _smtpUser));
@@ -55,13 +56,17 @@ namespace FunctionCall.Agent
             emailMessage.Subject = subject;
             emailMessage.Body = new TextPart("html") { Text = body };
 
+            string result = "";
+            
             using (var client = new MailKit.Net.Smtp.SmtpClient())
             {
                 await client.ConnectAsync(_smtpServer, _smtpPort, true);
                 await client.AuthenticateAsync(_smtpUser, _smtpPass);
-                await client.SendAsync(emailMessage);
+                result = await client.SendAsync(emailMessage);
                 await client.DisconnectAsync(true);
             }
+
+            return result;
         }
     }
 }

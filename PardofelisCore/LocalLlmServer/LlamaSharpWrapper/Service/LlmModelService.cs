@@ -45,69 +45,79 @@ public class LlmModelService : ILlmModelService
             .CreateLogger();
         _toolPromptGenerator = new ToolPromptGenerator();
         InitModelIndex();
-        if (_usedset == null || _model == null)
-        {
-            throw new InvalidOperationException("Failed to initialize the model.");
-        }
+        //if (_usedset == null || _model == null)
+        //{
+        //    throw new InvalidOperationException("Failed to initialize the model.");
+        //}
     }
     
     /// 初始化指定模型
     public void InitModelIndex()
     {
-        if (_settings.Models.Count == 0)
+        /*NativeLibraryConfig.All.WithLogCallback(delegate (LLamaLogLevel level, string message)
         {
-            _logger.Error("No model settings.");
-            throw new ArgumentException("No model settings.");
-        }
+            Log.Information($"{level}: {message}");
+        });*/
 
-        // 从配置中获取模型索引
-        int loadModelIndex = GlobalConfig.Instance.CurrentModelIndex;
+        // if (_settings.Models.Count == 0)
+        // {
+        //     _logger.Error("No model settings.");
+        //     throw new ArgumentException("No model settings.");
+        // }
+        //
+        // // 从配置中获取模型索引
+        // int loadModelIndex = GlobalConfig.Instance.CurrentModelIndex;
+        //
+        // // 检查模型是否已加载，且索引相同
+        // if (GlobalConfig.Instance.IsModelLoaded && _loadModelIndex == loadModelIndex)
+        // {
+        //     _logger.Information("Model has been loaded.");
+        //     return;
+        // }
+        //
+        // if (loadModelIndex < 0 || loadModelIndex >= _settings.Models.Count)
+        // {
+        //     _logger.Error("Invalid model index: {modelIndex}.", loadModelIndex);
+        //     throw new ArgumentException("Invalid model index.");
+        // }
+        //
+        // var usedset = _settings.Models[loadModelIndex];
+        //
+        // if (string.IsNullOrWhiteSpace(LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath) ||
+        //     !File.Exists(LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath))
+        // {
+        //     _logger.Error("Model path is error: {path}.", LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath);
+        //     throw new ArgumentException("Model path is error.");
+        // }
+        //
+        // // 适用于模型切换，先释放模型资源
+        // DisposeModel();
+        //
+        // var llmParams = LlmModelParams.ToModelParams(usedset.LlmModelParams);
+        // llmParams.Encoding = Encoding.UTF8;
+        //
+        // _model = LLamaWeights.LoadFromFile(llmParams);
 
-        // 检查模型是否已加载，且索引相同
-        if (GlobalConfig.Instance.IsModelLoaded && _loadModelIndex == loadModelIndex)
-        {
-            _logger.Information("Model has been loaded.");
-            return;
-        }
-
-        if (loadModelIndex < 0 || loadModelIndex >= _settings.Models.Count)
-        {
-            _logger.Error("Invalid model index: {modelIndex}.", loadModelIndex);
-            throw new ArgumentException("Invalid model index.");
-        }
-
-        var usedset = _settings.Models[loadModelIndex];
-
-        if (string.IsNullOrWhiteSpace(LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath) ||
-            !File.Exists(LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath))
-        {
-            _logger.Error("Model path is error: {path}.", LlmModelParams.ToModelParams(usedset.LlmModelParams).ModelPath);
-            throw new ArgumentException("Model path is error.");
-        }
-
-        // 适用于模型切换，先释放模型资源
-        DisposeModel();
-
-        _model = LLamaWeights.LoadFromFile(LlmModelParams.ToModelParams(usedset.LlmModelParams));
-
-        var embeddingParams = LlmModelParams.ToModelParams(usedset.LlmModelParams);
-        embeddingParams.PoolingType = LLamaPoolingType.Mean;
         /*var embeddingParams = new ModelParams(Path.Join(CommonConfig.EmbeddingModelRootPath, _settings.EmbeddingModelConfig.LlmModelParams.ModelFileName))
         {
             PoolingType = LLamaPoolingType.Mean,
             
         };*/
+        //var embeddingParams = LlmModelParams.ToModelParams(LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams);
+        var embeddingParams = new ModelParams(Path.Join(CommonConfig.ModelRootPath, LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams.ModelFileName));
+        embeddingParams.PoolingType = LLamaPoolingType.Mean;
+        embeddingParams.Encoding = Encoding.UTF8;
         _embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
         _embedder = new LLamaEmbedder(_embeddingModel, embeddingParams);
         
-        /*if (LlmModelParams.ToModelParams(usedset.LlmModelParams).Embeddings)
-        {
-            _embedder = new LLamaEmbedder(_model, LlmModelParams.ToModelParams(usedset.LlmModelParams));
-        }*/
+        // if (LlmModelParams.ToModelParams(usedset.LlmModelParams).Embeddings)
+        // {
+        //     _embedder = new LLamaEmbedder(_model, LlmModelParams.ToModelParams(usedset.LlmModelParams));
+        // }
 
-        _usedset = usedset;
-        _loadModelIndex = loadModelIndex;
-        GlobalConfig.Instance.IsModelLoaded = true;
+        // _usedset = usedset;
+        // _loadModelIndex = loadModelIndex;
+        // GlobalConfig.Instance.IsModelLoaded = true;
     }
 
     /// 获取模型信息
@@ -136,7 +146,7 @@ public class LlmModelService : ILlmModelService
         var completion_tokens = 0;
 
         _logger.Debug("Prompt context: {prompt_context}", chatHistory.ChatHistory);
-
+        
         await foreach (var output in ex.InferAsync(chatHistory.ChatHistory, genParams, cancellationToken))
         {
             _logger.Debug("Message: {output}", output);
@@ -542,11 +552,12 @@ public class LlmModelService : ILlmModelService
             _logger.Warning("Embedder is null.");
             return new EmbeddingResponse();
         }
-
+        
         foreach (var text in request.input)
         {
             var embedding = await _embedder.GetEmbeddings(text, cancellationToken);
-            embeddings.AddRange(embedding);
+            var normalizedEmbedding = LLama.Extensions.SpanNormalizationExtensions.EuclideanNormalization(embedding.Single());
+            embeddings.Add(normalizedEmbedding);
         }
 
         return new EmbeddingResponse
