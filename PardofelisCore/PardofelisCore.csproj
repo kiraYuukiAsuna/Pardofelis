@@ -10,7 +10,7 @@
       <PackageReference Include="Gradio.Net.AspNetCore" Version="0.1.6" />
       <PackageReference Include="LLamaSharp" Version="0.16.0" />
       <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.16.0" />
-      <PackageReference Include="Microsoft.SemanticKernel" Version="1.16.2" />
+      <PackageReference Include="Microsoft.SemanticKernel" Version="1.17.2" />
       <PackageReference Include="Microsoft.SemanticKernel.Connectors.Sqlite" Version="1.16.2-alpha" />
       <PackageReference Include="NAudio" Version="2.2.1" />
       <PackageReference Include="Nerdbank.GitVersioning" Version="3.7.77-alpha">
@@ -18,7 +18,6 @@
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="OpenAI" Version="2.0.0-beta.11" />
       <PackageReference Include="org.k2fsa.sherpa.onnx" Version="1.10.23" />
       <PackageReference Include="org.k2fsa.sherpa.onnx.runtime.win-x64" Version="1.10.23" />
       <PackageReference Include="PortAudioSharp2" Version="1.0.4" />

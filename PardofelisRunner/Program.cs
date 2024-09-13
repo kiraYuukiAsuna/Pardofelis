@@ -3,8 +3,6 @@ using PardofelisCore.Config;
 using PardofelisCore.Util;
 using PardofelisCore.VoiceOutput;
 using PardofelisCore.VoiceInput;
-using System.Reflection;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
@@ -12,9 +10,6 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.Connectors.Sqlite;
 using Microsoft.SemanticKernel.Memory;
-using static System.Net.Mime.MediaTypeNames;
-using System.Text;
-using System.Diagnostics;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -57,6 +52,11 @@ if(String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
         {
             BaseAddress = new Uri("http://127.0.0.1:14251/v1/chat/completions")
         });*/
+    // builder.AddOpenAIChatCompletion("qwen-plus",
+    //     "sk-41705ee9bcb7418b881e978943f29b03", "", "", new HttpClient()
+    //     {
+    //         BaseAddress = new Uri("https://dashscope.aliyuncs.com/compatible-mode")
+    //     });
 }
 else
 {
@@ -128,6 +128,7 @@ VoiceInputController voiceInputController = new((string text) =>
 $"下面我们要进行角色扮演，你的名字叫{CharacterName}，你的人物设定内容是：\n{CharacterPreset}\n你正在对话的人的名字是{SpeakerName} ，现在是{DateTime.Now.ToString()}，你之后回复的有关时间的文本要符合尝试，例如今天是9月15日，那么9月14日就要用昨天代替，" +
 $"\n当前获取到的历史相关记忆信息如下，格式是类似于 2024/9/8 3:31:35 说话人（爱莉），对话人：（希儿）：今天你吃了吗？的格式，括号里的内容是名字，你需要根据你所知道的内容去判断是谁说的话，在后续回复中你只需要回复你想说的话，不用带上（{CharacterName}）等类似的表面说话人的信息，"+
 $"当然如果人物设定中出现了让你将人物心情用括号括起来的要求你可以去遵守，注意所有的回复不要带表情。\n";
+    
     foreach (var message in vectorSearch)
     {
         systemPrompt += message;
