@@ -128,7 +128,7 @@ public class LlmModelParams
 
     public static ModelParams ToModelParams(LlmModelParams llmModelParams)
     {
-        var modelParams = new ModelParams(Path.Join(CommonConfig.ModelRootPath,llmModelParams.ModelFileName));
+        var modelParams = new ModelParams(Path.Join(CommonConfig.LocalLlmModelRootPath,llmModelParams.ModelFileName));
         modelParams.ContextSize = llmModelParams.ContextSize;
         modelParams.MainGpu = llmModelParams.MainGpu;
         modelParams.GpuLayerCount = llmModelParams.GpuLayerCount;

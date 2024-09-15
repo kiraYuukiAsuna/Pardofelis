@@ -17,6 +17,8 @@ namespace PardofelisCore.Util;
 
 public class Rag
 {
+    private static readonly SemaphoreSlim RagSemaphore = new SemaphoreSlim(1, 1);
+
     public static async Task InsertTextChunkAsync(ISemanticTextMemory textMemory, string collection, string text, string additionalMetaData)
     {
         if (string.IsNullOrEmpty(collection) || string.IsNullOrEmpty(text))
@@ -36,13 +38,20 @@ public class Rag
 
     public static async Task<List<KeyValuePair<string, string>>> VectorSearch(ISemanticTextMemory textMemory, string collection, string text)
     {
-        var memoryResult = textMemory.SearchAsync(collection, text, 8, 0.7);
-        List<KeyValuePair<string, string>> results = new();
-        await foreach (var item in memoryResult)
+        await RagSemaphore.WaitAsync();
+        try
         {
-            results.Add(new KeyValuePair<string, string>(item.Metadata.Text, item.Metadata.AdditionalMetadata));
+            var memoryResult = textMemory.SearchAsync(collection, text, 8, 0.7);
+            List<KeyValuePair<string, string>> results = new();
+            await foreach (var item in memoryResult)
+            {
+                results.Add(new KeyValuePair<string, string>(item.Metadata.Text, item.Metadata.AdditionalMetadata));
+            }
+            return results;
         }
-
-        return results;
+        finally
+        {
+            RagSemaphore.Release();
+        }
     }
 }

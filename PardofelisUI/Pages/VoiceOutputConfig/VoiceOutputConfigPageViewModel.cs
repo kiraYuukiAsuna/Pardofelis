@@ -1,27 +1,28 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
-using MyElysiaRunner;
 using PardofelisUI.ControlsLibrary.Dialog;
 using SukiUI.Controls;
+using PardofelisCore.Config;
+using System.IO;
 
-namespace PardofelisUI.Pages.BertVits2Config;
+namespace PardofelisUI.Pages.VoiceOutputConfig;
 
-public partial class BertVits2ConfigPageViewModel : PageBase
+public partial class VoiceOutputConfigPageViewModel : PageBase
 {
-    private string CurrentWorkingDirectory;
     private string TTSConfigPath;
 
-    public BertVits2ConfigPageViewModel() : base("TTS语音输出配置", MaterialIconKind.FileCog, int.MinValue)
+    [ObservableProperty]
+    private DynamicUIConfig _dynamicUIConfig;
+
+    public VoiceOutputConfigPageViewModel() : base("TTS语音输出配置", MaterialIconKind.FileCog, int.MinValue)
     {
-        CurrentWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
-        TTSConfigPath = CurrentWorkingDirectory + "/Config/ApplicationConfig/BertVits2Config.json";
+        TTSConfigPath = Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/VoiceOutputConfig.json");
 
         ReloadConfig();
     }
 
     [ObservableProperty] private int _id;
-    [ObservableProperty] private string _format;
     [ObservableProperty] private string _lang;
     [ObservableProperty] private double _length;
     [ObservableProperty] private double _noise;
@@ -32,11 +33,9 @@ public partial class BertVits2ConfigPageViewModel : PageBase
     [RelayCommand]
     private void ReloadConfig()
     {
-        BertVits2Configuration ttsConfig = BertVits2Configuration.ReadConfig(TTSConfigPath);
+        PardofelisCore.Config.VoiceOutputConfig ttsConfig = PardofelisCore.Config.VoiceOutputConfig.ReadConfig(TTSConfigPath);
 
         Id = ttsConfig.Id;
-        Format = ttsConfig.Format;
-        Lang = ttsConfig.Lang;
         Length = ttsConfig.Length;
         Noise = ttsConfig.Noise;
         Noisew = ttsConfig.Noisew;
@@ -47,11 +46,9 @@ public partial class BertVits2ConfigPageViewModel : PageBase
     [RelayCommand]
     private void SaveConfig()
     {
-        BertVits2Configuration ttsConfig = new BertVits2Configuration
+        PardofelisCore.Config.VoiceOutputConfig ttsConfig = new PardofelisCore.Config.VoiceOutputConfig
         {
             Id = Id,
-            Format = Format,
-            Lang = Lang,
             Length = Length,
             Noise = Noise,
             Noisew = Noisew,
@@ -59,7 +56,7 @@ public partial class BertVits2ConfigPageViewModel : PageBase
             SegmentSize = SegmentSize
         };
 
-        BertVits2Configuration.WriteConfig(TTSConfigPath, ttsConfig);
+        PardofelisCore.Config.VoiceOutputConfig.WriteConfig(TTSConfigPath, ttsConfig);
         SukiHost.ShowDialog(new StandardDialog("保存配置文件成功!", "确定"));
     }
 }

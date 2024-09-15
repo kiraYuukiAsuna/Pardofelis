@@ -8,11 +8,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DynamicData;
-using LLama.Common;
 using Material.Icons;
-using MyElysiaCore;
-using MyElysiaRunner;
+using PardofelisCore.Config;
 using PardofelisUI.ControlsLibrary.Dialog;
 using SukiUI.Controls;
 
@@ -46,7 +43,7 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
         RescanConfig();
     }
 
-    string m_ConfigRootPath = System.IO.Directory.GetCurrentDirectory() + "/Config/CharacterPreset";
+    string m_ConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "CharacterPreset");
 
     [ObservableProperty] public AvaloniaList<string> _configFileNameList = [];
     [ObservableProperty] private string _selectedConfigFileName = "";
@@ -87,14 +84,7 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
         ConfigName = config.Name;
         YourName = config.YourName;
 
-        string systemPromptMessage = "";
-
-        foreach (var message in config.ChatContent.Messages)
-        {
-            systemPromptMessage += message.Content;
-        }
-
-        CharacterPresetTextAkaSystemPrompt = systemPromptMessage;
+        CharacterPresetTextAkaSystemPrompt = config.PresetContent;
 
         foreach (var regexExpression in config.ExceptTextRegexExpression)
         {
@@ -121,9 +111,6 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
         {
             EnabledPluginDataGridContent.Clear();
         }
-
-        HotRulesContentViewModel = config.HotRules;
-        HotZhWordsDataGridContent = config.HotZhWords;
 
         IdleAskTime = config.IdleAskMeTime;
         IdleAskMessage = config.IdleAskMeMessage;
@@ -412,13 +399,8 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
             Name = ConfigName,
             YourName = YourName,
             ExceptTextRegexExpression = exceptTextRegexExpressions,
-            ChatContent = new()
-            {
-                Messages = new List<Message> { new(Role.System, CharacterPresetTextAkaSystemPrompt) }
-            },
+            PresetContent = CharacterPresetTextAkaSystemPrompt,
             EnabledPlugins = enabledPlugins,
-            HotZhWords = HotZhWordsDataGridContent,
-            HotRules = HotRulesContentViewModel,
             IdleAskMeTime = IdleAskTime,
             IdleAskMeMessage = IdleAskMessage
         };

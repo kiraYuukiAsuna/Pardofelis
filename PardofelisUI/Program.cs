@@ -7,6 +7,8 @@ using Avalonia.Dialogs;
 using PardofelisUI.ControlsLibrary.Dialog;
 using Serilog;
 using SukiUI.Controls;
+using System.IO;
+using PardofelisCore.Config;
 
 namespace PardofelisUI;
 
@@ -27,33 +29,6 @@ class Program
         {
             Log.Fatal(e, "An unhandled exception occurred." +
                          "Please report this error to the developers.");
-
-            Log.Information("关闭所有Python进程开始...");
-            try
-            {
-                // 获取所有正在运行的进程
-                Process[] allProcesses = Process.GetProcesses();
-
-                // 查找所有名为 "python" 的进程
-                var pythonProcesses = allProcesses.Where(p => p.ProcessName.ToLower().Contains("python"));
-
-                // 逐个关闭这些进程
-                foreach (var process in pythonProcesses)
-                {
-                    Console.WriteLine($"Killing process {process.ProcessName} with ID {process.Id}");
-                    process.Kill();
-                    process.WaitForExit(); // 等待进程完全退出
-                }
-
-                Log.Information("All Python processes have been terminated.");
-            }
-            catch (Exception ex)
-            {
-                SukiHost.ShowDialog(new StandardDialog("关闭Python进程失败! 请重新打开程序并手动检查关闭任务管理器中是否存在未关闭的Python进程！", "确定"));
-                Log.Error($"An error occurred: {ex.Message}");
-            }
-
-            Log.Information("关闭所有Python进程结束...");
         }
         finally
         {
@@ -67,7 +42,7 @@ class Program
     {
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File("Logs/Log.txt", rollingInterval: RollingInterval.Day)
+            .WriteTo.File(Path.Join(CommonConfig.LogRootPath, "Application.txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
         var app = AppBuilder.Configure<App>()

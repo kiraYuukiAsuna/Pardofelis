@@ -7,14 +7,14 @@ public static class CommonConfig
 
     public static string PardofelisAppDataPath = Path.Join(CurrentUserHomeDirectory, "PardofelisAppData");
     public static string ConfigRootPath = Path.Join(PardofelisAppDataPath, "Config");
-    public static string ModelRootPath = Path.Join(PardofelisAppDataPath, "LlmModel");
+    public static string EmbeddingModelRootPath = Path.Join(PardofelisAppDataPath, "EmbeddingModel");
+    public static string FunctionCallPluginRootPath = Path.Join(PardofelisAppDataPath, "FunctionCallPlugin");
+    public static string LocalLlmModelRootPath = Path.Join(PardofelisAppDataPath, "LocalLlmModel");
     public static string LogRootPath = Path.Join(PardofelisAppDataPath, "Log");
-    public static string EmbeddingModelRootPath = Path.Join(PardofelisAppDataPath, "LlmModel");
+    public static string MemoryRootPath = Path.Join(PardofelisAppDataPath, "Memory");
     public static string PluginRootPath = Path.Join(PardofelisAppDataPath, "Plugin");
     public static string PythonRootPath = Path.Join(PardofelisAppDataPath, "Python3.9.13");
     public static string VoiceModelRootPath = Path.Join(PardofelisAppDataPath, "VoiceModel");
-    public static string FunctionCallPluginRootPath = Path.Join(PardofelisAppDataPath, "FunctionCallPlugin");
-    public static string MemoryRootPath = Path.Join(PardofelisAppDataPath, "Memory");
 
 
     public static string GlobalConfigConfigPath = Path.Join(ConfigRootPath, "GlobalConfig.Instance.json");

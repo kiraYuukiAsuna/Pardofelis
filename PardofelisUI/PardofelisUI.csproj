@@ -38,8 +38,7 @@
       <DependentUpon>LlmConfigPage.axaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Pages\BertVits2Config\BertVits2ConfigPage.axaml.cs">
-      <DependentUpon>BertVits2ConfigPage.axaml</DependentUpon>
+    <Compile Update="Pages\VoiceOutputConfig\VoiceOutputConfigPage.axaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Pages\VoiceInputConfig\VoiceInputConfigPage.axaml.cs">
@@ -74,6 +73,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\ManSuiAiAssistantUI\MyElysiaCore\MyElysiaCore.csproj" />
+    <ProjectReference Include="..\PardofelisCore\PardofelisCore.csproj" />
   </ItemGroup>
 </Project>

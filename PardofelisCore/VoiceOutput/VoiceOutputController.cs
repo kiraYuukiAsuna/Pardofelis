@@ -2,6 +2,7 @@
 using Python.Runtime;
 using NAudio.Wave;
 using Serilog;
+using System.Runtime.Intrinsics.Arm;
 
 namespace PardofelisCore.VoiceOutput;
 
@@ -21,20 +22,27 @@ public class VoiceOutputController
     private void PlayAudio(byte[] audioData, CancellationTokenSource cancellationToken)
     {
         using (var ms = new MemoryStream(audioData))
-        using (var rdr = new WaveFileReader(ms))
-        using (var waveOut = new WaveOutEvent())
+        try
         {
-            waveOut.Init(rdr);
-            waveOut.Play();
-            while (waveOut.PlaybackState == PlaybackState.Playing)
+            using (var rdr = new WaveFileReader(ms))
+            using (var waveOut = new WaveOutEvent())
             {
-                if (cancellationToken.IsCancellationRequested)
+                waveOut.Init(rdr);
+                waveOut.Play();
+                while (waveOut.PlaybackState == PlaybackState.Playing)
                 {
-                    waveOut.Stop();
-                    break;
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        waveOut.Stop();
+                        break;
+                    }
+                    Task.Delay(100).Wait(); // 保持播放状态直到播放完成
                 }
-                Task.Delay(100).Wait(); // 保持播放状态直到播放完成
             }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to play audio.");
         }
     }
 
@@ -72,7 +80,7 @@ public class VoiceOutputController
                     {
                         using (Py.GIL())
                         {
-                            Log.Information("GIL Accquired");
+                            Log.Information("GIL Acquired");
 
                             if (ThisCancellationToken.IsCancellationRequested)
                             {
@@ -141,6 +149,7 @@ public class VoiceOutputController
         catch (Exception e)
         {
             Log.Error(e, "Python Invoke Method Error.");
+            throw;
         }
     }
 }

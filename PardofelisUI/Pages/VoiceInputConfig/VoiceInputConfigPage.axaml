@@ -10,7 +10,7 @@
     <controls:GlassCard Margin="40"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
-        <controls:GroupBox Header="关于 满穗AI助手">
+        <controls:GroupBox Header="{Binding DynamicUIConfig.AppName}">
             <StackPanel>
                 <Image Width="135"
                        Height="135"

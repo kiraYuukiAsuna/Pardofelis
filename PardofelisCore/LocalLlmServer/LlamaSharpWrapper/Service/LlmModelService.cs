@@ -104,7 +104,7 @@ public class LlmModelService : ILlmModelService
             
         };*/
         //var embeddingParams = LlmModelParams.ToModelParams(LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams);
-        var embeddingParams = new ModelParams(Path.Join(CommonConfig.ModelRootPath, LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams.ModelFileName));
+        var embeddingParams = new ModelParams(Path.Join(CommonConfig.EmbeddingModelRootPath, LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams.ModelFileName));
         embeddingParams.PoolingType = LLamaPoolingType.Mean;
         embeddingParams.Encoding = Encoding.UTF8;
         _embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);

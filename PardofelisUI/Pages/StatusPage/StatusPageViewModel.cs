@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Reactive.Concurrency;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,13 +12,34 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
-using MyElysiaCore;
-using MyElysiaRunner;
 using PardofelisUI.ControlsLibrary.Dialog;
 using Newtonsoft.Json;
 using Serilog;
 using SukiUI.Controls;
 using Path = System.IO.Path;
+using PardofelisCore.Config;
+using PardofelisCore;
+using PardofelisCore.Util;
+using Microsoft.SemanticKernel.Memory;
+using Microsoft.SemanticKernel;
+using PardofelisCore.VoiceOutput;
+using PardofelisCore.VoiceInput;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel.Connectors.Sqlite;
+using System.Net.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Gradio.Net;
+using File = System.IO.File;
+using PardofelisCore.LlmController.OpenAiModel;
+using System.Text;
+using System.Collections.Concurrent;
+
+#pragma warning disable SKEXP0050
+#pragma warning disable SKEXP0010
+#pragma warning disable SKEXP0020
+#pragma warning disable SKEXP0001
 
 namespace PardofelisUI.Pages.StatusPage;
 
@@ -115,14 +134,14 @@ public partial class StatusPageViewModel : PageBase
 
     [ObservableProperty] AvaloniaList<string> _characterPresetConfigList = [];
 
-    private string m_ModelConfigRootPath = System.IO.Directory.GetCurrentDirectory() + "/Config/ModelConfig";
+    private string m_ModelConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "ModelConfig");
 
-    string m_CharactPresetConfigRootPath = System.IO.Directory.GetCurrentDirectory() + "/Config/CharacterPreset";
+    string m_CharactPresetConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "CharacterPreset");
 
-    private string m_LocalModelRootPath = System.IO.Directory.GetCurrentDirectory() + "/Model";
+    private string m_LocalModelRootPath = CommonConfig.LocalLlmModelRootPath;
 
     private string m_ApplicationConfigFilePath =
-        System.IO.Directory.GetCurrentDirectory() + "/Config/ApplicationConfig/ApplicationConfig.json";
+        Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/ApplicationConfig.json");
 
 
     [ObservableProperty] private bool _runningState;
@@ -302,47 +321,229 @@ public partial class StatusPageViewModel : PageBase
         }
     }
 
-    private string CurrentWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
     private CancellationTokenSource CurrentCancellationToken;
-    private CancellationTokenSource CurrentSubCancellationToken;
 
     [ObservableProperty] private bool _runCodeProtection;
-
-
-    // critical resources
-    private BertVitsConnectionHandler bertVitsConnectionHandlerInstance;
-    private Thread bertVitsConnectionDetectThread;
-    private ProcessStartInfo bertvitsStartInfo;
-
-    private VoiceInputConnectionHandler voiceConnectionHandlerInstance;
-    private Thread voiceConnectionHandlerThread;
-    private Thread voiceConnectionDetectThread;
-
-    private ProcessStartInfo voiceInputServerStartInfo;
-    private ProcessStartInfo voiceInputClientStartInfo;
-
-    private Process process1;
-    private Process process2;
-    private Process process3;
-
-    private LocalLlmController localLlmController;
-    private OnlineLlmController onlineLlmController;
-
-    private Thread voiceAutoInputThread;
 
     private Thread idleAskThread;
 
     private List<Process> pluginInstances = new();
+
+
+    private ISemanticTextMemory? SemanticTextMemory;
+    private PythonInstance? PythonInstance;
+    private VoiceInputController? VoiceInputController;
+    private Thread? EmbeddingModelAndLocalLlmApiThread;
+    private Kernel? SemanticKernel;
+    private VoiceOutputController? VoiceOutputController;
+    ChatHistory ChatMessages = new ChatHistory();
+
+    DateTime LastInferenceTime;
+
+    private BlockingCollection<string> _messageQueue = new BlockingCollection<string>();
+    private Thread _messageProcessingThread;
+
+    private void StartMessageProcessing()
+    {
+        _messageQueue = new BlockingCollection<string>();
+        _messageProcessingThread = new Thread(async () =>
+        {
+            foreach (var message in _messageQueue.GetConsumingEnumerable())
+            {
+                await ProcessMessage(message);
+            }
+        });
+        _messageProcessingThread.IsBackground = true;
+        _messageProcessingThread.Start();
+    }
+
+    private void StopMessageProcessing()
+    {
+        _messageQueue.CompleteAdding();
+        _messageProcessingThread.Join();
+    }
+
+    private async Task ProcessMessage(string message)
+    {
+        await onLlmMessageInput(message);
+    }
+    public void QueueMessage(string text)
+    {
+        _messageQueue.Add(text);
+    }
+
+    private ChatContent ChatMessagesToChatMessage()
+    {
+        ChatContent chatContent = new();
+        foreach (var message in ChatMessages)
+        {
+            switch (message.Role.Label)
+            {
+                case "system":
+                    {
+                        chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
+                        (
+                            Role.User,
+                            message.Content
+                        ));
+                        break;
+                    }
+
+                case "assistant":
+                    {
+                        chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
+                        (
+                            Role.Assistant,
+                            message.Content
+                        ));
+                        break;
+                    }
+                case "user":
+                    {
+                        chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
+                        (
+                            Role.User,
+                            message.Content
+                        ));
+                        break;
+                    }
+            }
+        }
+
+        return chatContent;
+    }
+
+    private async Task onLlmMessageInput(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        if (SemanticTextMemory == null || PythonInstance == null  || SemanticKernel == null || VoiceOutputController == null)
+        {
+            return;
+        }
+
+        List<KeyValuePair<string, string>> vectorSearch = new();
+        try
+        {
+            vectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", text).GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e.Message);
+            ShowMessageBox("查询向量数据库失败! 错误信息：" + e.Message, "确定")
+                .GetAwaiter().GetResult();
+        }
+
+        string systemPrompt =
+$"下面我们要进行角色扮演，你的名字叫{m_CurrentCharacterPreset.Name}，你的人物设定内容是：\n{m_CurrentCharacterPreset.PresetContent}\n你正在对话的人的名字是{m_CurrentCharacterPreset.YourName} ，现在是{DateTime.Now.ToString()}，你之后回复的有关时间的文本要符合常识，例如今天是9月15日，那么9月14日就要用昨天代替.\n" +
+$"当前使用向量搜索获取到的你的历史相关记忆信息如下，格式是类似于 2024/9/8 3:31:35 说话人（爱莉），对话人：（希儿）：早上好啊！ 的格式，括号里的内容是名字，你需要根据你所知道的内容去判断是谁说的话，在后续回复中你只需要回复你想说的话，不用带上（{m_CurrentCharacterPreset.Name}）等类似的表明说话人的信息，"+
+$"当然如果人物设定中出现了让你将人物心情用括号括起来的要求你可以去遵守，注意所有的回复不要带表情：\n";
+
+        foreach (var message in vectorSearch)
+        {
+            systemPrompt += message;
+        }
+
+        systemPrompt += "\n根据上述信息进行角色扮演，并在适当的时候调用工具，当没有显式说出调用工具的名称时不要去调用工具，调用工具的参数不能凭空捏造，在工具调用信息缺失时你会继续提问直到满足调用该工具的参数要求为止。";
+
+        OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
+        {
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+            ChatSystemPrompt = systemPrompt,
+            Temperature = m_CurrentModelParameter.OnlineLlmCreateInfo.Temperature,
+        };
+
+        Log.Information("\n" + text);
+        ChatMessages.AddUserMessage(text);
+
+        var chatContentBefore = ChatMessagesToChatMessage();
+        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentBefore));
+
+        IChatCompletionService chatCompletionService = SemanticKernel.GetRequiredService<IChatCompletionService>();
+
+        Task<IReadOnlyList<ChatMessageContent>>? result = null;
+        try
+        {
+            result = chatCompletionService.GetChatMessageContentsAsync(
+            ChatMessages,
+            executionSettings: openAIPromptExecutionSettings,
+            kernel: SemanticKernel);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e.Message);
+            ShowMessageBox("请求大模型数据失败! 错误信息：" + e.Message, "确定")
+                .GetAwaiter().GetResult();
+        }
+
+        Log.Information("Assistant > ");
+        var assistantMessage = result.Result.FirstOrDefault()?.Content;
+        if (assistantMessage == null)
+        {
+            return;
+        }
+
+        string audioText = "";
+        string processedMessage = assistantMessage;
+
+        foreach (var pattern in m_CurrentCharacterPreset.ExceptTextRegexExpression)
+        {
+            if (!string.IsNullOrEmpty(pattern))
+            {
+                processedMessage = Regex.Replace(processedMessage, pattern, match =>
+                {
+                    Log.Information($"Removed: {match.Value}");
+                    return string.Empty;
+                });
+            }
+
+            processedMessage = processedMessage == "" ? assistantMessage : processedMessage;
+        }
+
+        audioText = processedMessage == "" ? assistantMessage : processedMessage;
+
+        Log.Information("\n" + assistantMessage);
+        ChatMessages.AddAssistantMessage(assistantMessage);
+
+        HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
+            ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
+            : "<(未知)>:";
+        HistoryTextBlock += "\n" + text + "\n\n";
+
+        HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
+        ? ("<" + m_CurrentCharacterPreset.Name + ">:")
+        : "<(未知)>:";
+        HistoryTextBlock += "\n" + assistantMessage + "\n\n";
+
+        var chatContentAfter = ChatMessagesToChatMessage();
+        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentAfter));
+
+        try
+        {
+            VoiceOutputController.Speak(assistantMessage);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e.Message);
+            ShowMessageBox("TTS语音输出失败! 错误信息：" + e.Message, "确定")
+                .GetAwaiter().GetResult();
+        }
+
+        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", text, $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.YourName}）] [对话人({m_CurrentCharacterPreset.Name}）]：").GetAwaiter().GetResult();
+        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", assistantMessage, $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.Name}）] [对话人({m_CurrentCharacterPreset.YourName}）]：").GetAwaiter().GetResult();
+    }
+
 
     [RelayCommand]
     private void Run()
     {
         if (RunningState)
         {
-            if (CurrentSubCancellationToken != null && !CurrentSubCancellationToken.IsCancellationRequested)
-            {
-                CurrentSubCancellationToken.Cancel();
-            }
+            // 停止运行
+            StopMessageProcessing();
 
             if (CurrentCancellationToken != null && !CurrentCancellationToken.IsCancellationRequested)
             {
@@ -357,56 +558,23 @@ public partial class StatusPageViewModel : PageBase
                 }
             }
 
-            if (process1 != null && !process1.HasExited)
+            // change status
+            GlobalStatus.CurrentRunningStatus = RunningStatus.Stopped;
+            GlobalStatus.CurrentStatus = SystemStatus.Idle;
+
+            // clear resources
+            SemanticTextMemory = null;
+            if (PythonInstance != null)
             {
-                process1.Kill();
+                PythonInstance.ShutdownPythonEngine();
+                PythonInstance = null;
             }
+            // EmbeddingModelAndLocalLlmApiThread = null;
+            VoiceInputController = null;
+            SemanticKernel = null;
+            VoiceOutputController = null;
 
-            if (process2 != null && !process2.HasExited)
-            {
-                process2.Kill();
-            }
-
-            if (process3 != null && !process3.HasExited)
-            {
-                process3.Kill();
-            }
-
-            Log.Information("关闭所有Python进程开始...");
-            try
-            {
-                // 获取所有正在运行的进程
-                Process[] allProcesses = Process.GetProcesses();
-
-                // 查找所有名为 "python" 的进程
-                var pythonProcesses = allProcesses.Where(p => p.ProcessName.ToLower().Contains("python"));
-
-                // 逐个关闭这些进程
-                foreach (var process in pythonProcesses)
-                {
-                    Console.WriteLine($"Killing process {process.ProcessName} with ID {process.Id}");
-                    process.Kill();
-                    process.WaitForExit(); // 等待进程完全退出
-                }
-
-                Log.Information("All Python processes have been terminated.");
-            }
-            catch (Exception ex)
-            {
-                SukiHost.ShowDialog(new StandardDialog("关闭Python进程失败! 请重新打开程序并手动检查关闭任务管理器中是否存在未关闭的Python进程！", "确定"));
-                Log.Error($"An error occurred: {ex.Message}");
-            }
-
-            Log.Information("关闭所有Python进程结束...");
-
-
-            RunningState = false;
-
-            GlobalStatus.Instance.IsBertVitsConnectionEstablished = false;
-            GlobalStatus.Instance.IsVoiceConnectionEstablished = false;
-            GlobalStatus.Instance.IsVoiceInputServerOnline = false;
-            GlobalStatus.Instance.IsVoiceInputClientOnline = false;
-
+            // change ui
             RunButtonText = "点击开始运行!";
 
             InfoBarTitle = "当前状态：";
@@ -416,6 +584,9 @@ public partial class StatusPageViewModel : PageBase
 
             StepperIndex = 0;
             Steps = new AvaloniaList<string>();
+
+            // change running state
+            RunningState = false;
 
             return;
         }
@@ -462,56 +633,22 @@ public partial class StatusPageViewModel : PageBase
         }
 
 
-        Thread startThread = new Thread(() =>
+        Thread startThread = new Thread(async () =>
         {
+            // 开始启动
             RunCodeProtection = true;
 
             HistoryTextBlock = "";
 
-            CurrentCancellationToken = new CancellationTokenSource();
-            CurrentSubCancellationToken = new CancellationTokenSource();
-
             RunButtonText = "点击停止运行!";
 
-            Log.Information("关闭所有Python进程开始...");
-            try
-            {
-                // 获取所有正在运行的进程
-                Process[] allProcesses = Process.GetProcesses();
-
-                // 查找所有名为 "python" 的进程
-                var pythonProcesses = allProcesses.Where(p => p.ProcessName.ToLower().Contains("python"));
-
-                // 逐个关闭这些进程
-                foreach (var process in pythonProcesses)
-                {
-                    Console.WriteLine($"Killing process {process.ProcessName} with ID {process.Id}");
-                    process.Kill();
-                    process.WaitForExit(); // 等待进程完全退出
-                }
-
-                Log.Information("All Python processes have been terminated.");
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox("关闭Python进程失败! 请重新打开程序并手动检查关闭任务管理器中是否存在未关闭的Python进程！", "确定");
-                Log.Error($"An error occurred: {ex.Message}");
-            }
-
-            Log.Information("关闭所有Python进程结束...");
-
             Log.Information("Start.");
-
-            InfoBarTitle = "当前状态：";
-            InfoBarMessage = "正在启动...";
-            InfoBarSeverity = SukiUI.Enums.NotificationType.Info;
-            UpdateStatusColor(Color.FromRgb(33, 71, 192));
 
             if (m_CurrentModelParameter.TextInputMode == TextInputMode.Text)
             {
                 Steps = new AvaloniaList<string>()
                 {
-                    "启动BertVits2 TTS服务", "连接大语言模型",
+                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "连接大语言模型", "加载FunctionCall插件", "启动TTS语音输出服务",
                 };
                 StepperIndex = 0;
             }
@@ -519,595 +656,241 @@ public partial class StatusPageViewModel : PageBase
             {
                 Steps = new AvaloniaList<string>()
                 {
-                    "启动语音输入服务", "启动语音输入客户端", "启动BertVits2 TTS服务", "连接大语言模型",
+                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "连接大语言模型", "加载FunctionCall插件", "启动语音输入服务", "启动TTS语音输出服务",
                 };
                 StepperIndex = 0;
             }
 
-            if (bertVitsConnectionHandlerInstance == null)
+
+            InfoBarTitle = "当前状态：正在启动！\n";
+            InfoBarMessage = "当前输入模式：" +
+                             (m_CurrentModelParameter.TextInputMode == TextInputMode.Text
+                                ? "(文本模式 + 自定义Api请求输入源)"
+                                : "(语音模式 + 文本模式 + 自定义Api请求输入源)\n") +
+                             "当前大模型模式：" +
+            (m_CurrentModelParameter.ModelType == ModelType.Local
+                                 ? "(本地大模型)"
+                                 : "(在线大模型)");
+            InfoBarSeverity = SukiUI.Enums.NotificationType.Success;
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 0;
+
+
+            // CancellationTokenSource
+            CurrentCancellationToken = new CancellationTokenSource();
+
+
+            // 启动向量数据库
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 1;
+
+            var memoryBuilder = new MemoryBuilder();
+            memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "org id", new HttpClient()
             {
-                bertVitsConnectionHandlerInstance = new BertVitsConnectionHandler("http://127.0.0.1:14252");
-            }
-
-            bertVitsConnectionHandlerInstance.reloadConfig();
-
-            bertVitsConnectionDetectThread = new Thread(() =>
-            {
-                while (!CurrentCancellationToken.IsCancellationRequested)
-                {
-                    try
-                    {
-                        if (bertVitsConnectionHandlerInstance.sendIsVoiceServiceOnline().GetAwaiter().GetResult())
-                        {
-                            if (m_CurrentModelParameter.TextInputMode == TextInputMode.Text && !RunningState)
-                            {
-                                StepperIndex = 1;
-
-                                InfoBarTitle = "当前状态：";
-                                InfoBarMessage = "启动成功! 当前输入模式: 文本输入模式; " +
-                                                 (m_CurrentModelParameter.ModelType == ModelType.Local
-                                                     ? "(本地模型)"
-                                                     : "(在线模型)");
-                                InfoBarSeverity = SukiUI.Enums.NotificationType.Success;
-                                UpdateStatusColor(Color.FromRgb(36, 192, 81));
-
-                                idleAskThread = new Thread(() =>
-                                {
-                                    Log.Information("Idle ask thread started.");
-
-                                    if (m_CurrentCharacterPreset.IdleAskMeTime >= 10)
-                                    {
-                                        TimeSpan timeout = TimeSpan.FromSeconds(m_CurrentCharacterPreset.IdleAskMeTime);
-
-                                        while (!CurrentCancellationToken.IsCancellationRequested)
-                                        {
-                                            DateTime startTime = DateTime.Now;
-                                            if (m_CurrentModelParameter.ModelType == ModelType.Local)
-                                            {
-                                                startTime = localLlmController.LastInferTime;
-                                            }
-                                            else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-                                            {
-                                                startTime = onlineLlmController.LastInferTime;
-                                            }
-
-                                            // 检查是否已经超过了预定的最大执行时间
-                                            if (DateTime.Now - startTime > timeout)
-                                            {
-                                                Log.Information("Idle ask thread timeout. Send idle ask message.");
-
-                                                string idleAskMessage = m_CurrentCharacterPreset.IdleAskMeMessage;
-                                                if (m_CurrentModelParameter.ModelType == ModelType.Local)
-                                                {
-                                                    HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName +
-                                                                        ">:\n" + idleAskMessage + "\n\n";
-                                                    CaretIndex = Int32.MaxValue;
-                                                    try
-                                                    {
-                                                        localLlmController.Infer(new Message(Role.User, idleAskMessage))
-                                                            .GetAwaiter().GetResult();
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        Log.Error(e.Message);
-                                                        ShowMessageBox("请求大模型推理数据失败! 错误信息：" + e.Message, "确定")
-                                                            .GetAwaiter().GetResult();
-                                                    }
-
-                                                    localLlmController.LastInferTime = DateTime.Now;
-                                                }
-                                                else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-                                                {
-                                                    HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName +
-                                                                        ">:\n" + idleAskMessage + "\n\n";
-                                                    CaretIndex = Int32.MaxValue;
-                                                    try
-                                                    {
-                                                        onlineLlmController
-                                                            .Infer(new Message(Role.User, idleAskMessage))
-                                                            .GetAwaiter().GetResult();
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        Log.Error(e.Message);
-                                                        ShowMessageBox("请求大模型推理数据失败! 错误信息：" + e.Message, "确定")
-                                                            .GetAwaiter().GetResult();
-                                                    }
-
-                                                    onlineLlmController.LastInferTime = DateTime.Now;
-                                                }
-                                            }
-
-                                            Thread.Sleep(TimeSpan.FromSeconds(1));
-                                        }
-                                    }
-
-                                    Log.Information("Idle ask thread stopped.");
-                                });
-                                idleAskThread.Start();
-
-                                RunningState = true;
-                            }
-                            else if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice && !RunningState)
-                            {
-                                TimeSpan timeout = TimeSpan.FromSeconds(180);
-                                DateTime startTime = DateTime.Now;
-
-                                while (!CurrentSubCancellationToken.IsCancellationRequested)
-                                {
-                                    if (GlobalStatus.Instance.IsVoiceInputServerOnline &&
-                                        GlobalStatus.Instance.IsVoiceInputClientOnline)
-                                    {
-                                        StepperIndex = 3;
-
-                                        InfoBarTitle = "当前状态：";
-                                        InfoBarMessage = "启动成功! 当前输入模式: 语音输入模式+文本输入模式; " +
-                                                         (m_CurrentModelParameter.ModelType == ModelType.Local
-                                                             ? "(本地模型)"
-                                                             : "(在线模型)");
-                                        InfoBarSeverity = SukiUI.Enums.NotificationType.Success;
-                                        UpdateStatusColor(Color.FromRgb(36, 192, 81));
-
-                                        idleAskThread = new Thread(() =>
-                                        {
-                                            Log.Information("Idle ask thread started.");
-
-                                            if (m_CurrentCharacterPreset.IdleAskMeTime >= 10)
-                                            {
-                                                TimeSpan timeout =
-                                                    TimeSpan.FromSeconds(m_CurrentCharacterPreset.IdleAskMeTime);
-
-                                                while (!CurrentCancellationToken.IsCancellationRequested)
-                                                {
-                                                    DateTime startTime = DateTime.Now;
-                                                    if (m_CurrentModelParameter.ModelType == ModelType.Local)
-                                                    {
-                                                        startTime = localLlmController.LastInferTime;
-                                                    }
-                                                    else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-                                                    {
-                                                        startTime = onlineLlmController.LastInferTime;
-                                                    }
-
-                                                    // 检查是否已经超过了预定的最大执行时间
-                                                    if (DateTime.Now - startTime > timeout)
-                                                    {
-                                                        Log.Information(
-                                                            "Idle ask thread timeout. Send idle ask message.");
-
-                                                        string idleAskMessage =
-                                                            m_CurrentCharacterPreset.IdleAskMeMessage;
-                                                        if (m_CurrentModelParameter.ModelType == ModelType.Local)
-                                                        {
-                                                            HistoryTextBlock += "<" +
-                                                                m_CurrentCharacterPreset.YourName +
-                                                                ">:\n" + idleAskMessage + "\n\n";
-                                                            CaretIndex = Int32.MaxValue;
-                                                            try
-                                                            {
-                                                                localLlmController
-                                                                    .Infer(new Message(Role.User, idleAskMessage))
-                                                                    .GetAwaiter().GetResult();
-                                                            }
-                                                            catch (Exception e)
-                                                            {
-                                                                Log.Error(e.Message);
-                                                                ShowMessageBox("请求大模型推理数据失败! 错误信息：" + e.Message, "确定")
-                                                                    .GetAwaiter().GetResult();
-                                                            }
-
-                                                            localLlmController.LastInferTime = DateTime.Now;
-                                                        }
-                                                        else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-                                                        {
-                                                            HistoryTextBlock += "<" +
-                                                                m_CurrentCharacterPreset.YourName +
-                                                                ">:\n" + idleAskMessage + "\n\n";
-                                                            CaretIndex = Int32.MaxValue;
-                                                            try
-                                                            {
-                                                                onlineLlmController
-                                                                    .Infer(new Message(Role.User, idleAskMessage))
-                                                                    .GetAwaiter().GetResult();
-                                                            }
-                                                            catch (Exception e)
-                                                            {
-                                                                Log.Error(e.Message);
-                                                                ShowMessageBox("请求大模型推理数据失败! 错误信息：" + e.Message, "确定")
-                                                                    .GetAwaiter().GetResult();
-                                                            }
-
-                                                            onlineLlmController.LastInferTime = DateTime.Now;
-                                                        }
-                                                    }
-
-                                                    Thread.Sleep(TimeSpan.FromSeconds(1));
-                                                }
-                                            }
-
-                                            Log.Information("Idle ask thread stopped.");
-                                        });
-                                        idleAskThread.Start();
-
-                                        RunningState = true;
-                                        break;
-                                    }
-
-                                    // 检查是否已经超过了预定的最大执行时间
-                                    if (DateTime.Now - startTime > timeout)
-                                    {
-                                        Log.Information("Timeout: voice input server or client maybe not started");
-                                        ShowMessageBox("语音输入服务或客户端启动超时!", "确定");
-                                        break;
-                                    }
-                                }
-                            }
-
-                            Util.LoggerBertVits.Information("BertVits connection established.");
-                            GlobalStatus.Instance.IsBertVitsConnectionEstablished = true;
-                            GlobalStatus.Instance.LastVoiceConnectionTime = DateTime.Now;
-                            Thread.Sleep(TimeSpan.FromSeconds(4));
-                        }
-                        else
-                        {
-                            Util.LoggerBertVits.Information("BertVits connection not established.");
-                            GlobalStatus.Instance.IsBertVitsConnectionEstablished = false;
-                            Thread.Sleep(TimeSpan.FromSeconds(2));
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Util.LoggerBertVits.Error(e.Message);
-                        Thread.Sleep(TimeSpan.FromSeconds(2));
-                    }
-                }
+                BaseAddress = new Uri("http://127.0.0.1:14251/v1/embeddings")
             });
-            bertVitsConnectionDetectThread.Start();
+
+            IMemoryStore memoryStore = await SqliteMemoryStore.ConnectAsync(Path.Join(CommonConfig.MemoryRootPath, "MemStore.db"));
+            memoryBuilder.WithMemoryStore(memoryStore);
+            SemanticTextMemory = memoryBuilder.Build();
+
+            // 初始化Python环境
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 2;
+            PythonInstance = new PythonInstance(CommonConfig.PythonRootPath);
 
 
-            bertvitsStartInfo = new ProcessStartInfo
+            // 加载Embedding模型
+            if (EmbeddingModelAndLocalLlmApiThread == null)
             {
-                FileName = CurrentWorkingDirectory + @"\Python3.9.13\python.exe",
-                Arguments = CurrentWorkingDirectory + @"\bertvits2CNExtraFix-simple-api\app.py",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = CurrentWorkingDirectory + @"\bertvits2CNExtraFix-simple-api\"
+                EmbeddingModelAndLocalLlmApiThread = new Thread(() =>
+                {
+                    InvokeMethod.Run();
+                });
+                EmbeddingModelAndLocalLlmApiThread.Start();
+            }
+            var request = new EmbeddingRequest
+            {
+                input = new []{ "你好！" },
+                model = "zpoint",
+                encoding_format = "float"
             };
 
-            process1 = new Process { StartInfo = bertvitsStartInfo };
-            if (!process1.Start())
+            var json = JsonConvert.SerializeObject(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            HttpClient client = new();
+            client.Timeout = TimeSpan.FromMinutes(5);
+            var response = await client.PostAsync("http://127.0.0.1:14251/v1/embeddings", content);
+
+            if (response.IsSuccessStatusCode)
             {
-                Log.Error("Failed to start BertVits server.");
-                ShowMessageBox("启动BertVits服务失败!", "确定");
+                var responseString = await response.Content.ReadAsStringAsync();
+                Log.Information($"TestEmbeddingRequest Success: {responseString}");
+            }
+            else
+            {
+                Log.Information($"TestEmbeddingRequest Error: {response.StatusCode}");
+                ShowMessageBox("加载Embedding模型失败! 错误信息：" + response.StatusCode.ToString() + "\n" + response.Content, "确定").GetAwaiter().GetResult();
             }
 
-            // 启动一个线程来读取标准输出和错误流
-            Thread outputThread1 = new Thread(() =>
+            try
             {
-                try
+                var queryResult = SemanticTextMemory.SearchAsync("Memory", "你好！", 1);
+                await foreach (var item in queryResult)
                 {
-                    while (!process1.HasExited)
-                    {
-                        string output = process1.StandardOutput.ReadLine();
-                        if (output != null)
-                        {
-                            Util.LoggerBertVits.Information(output);
-                        }
-                    }
+                    Log.Information("Memory search result test: {queryResult}", item.Metadata.Text);
                 }
-                catch (InvalidOperationException)
-                {
-                    // 进程已退出，捕获异常并结束线程
-                }
-            });
-            outputThread1.Start();
-
-            Thread errorThread1 = new Thread(() =>
+            }
+            catch (Exception e)
             {
-                try
-                {
-                    while (!process1.HasExited)
-                    {
-                        string error = process1.StandardError.ReadLine();
-                        if (error != null)
-                        {
-                            Util.LoggerBertVits.Error(error);
-                        }
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                    // 进程已退出，捕获异常并结束线程
-                }
-            });
-            errorThread1.Start();
-
-
-            if (voiceConnectionHandlerInstance == null)
-            {
-                string[] prefixes = { "http://127.0.0.1:14251/" };
-                voiceConnectionHandlerInstance =
-                    new VoiceInputConnectionHandler(prefixes);
+                Log.Error(e.Message);
+                ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
             }
 
-            voiceConnectionHandlerThread = new Thread(() =>
-            {
-                try
-                {
-                    voiceConnectionHandlerInstance._listener.Start();
-                    Log.Information("HTTP Server started. Listening for requests...");
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 3;
 
-                    while (!CurrentCancellationToken.IsCancellationRequested)
+
+            // 连接大语言模型
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 4;
+            var builder = Kernel.CreateBuilder();
+            builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
+
+            if (m_CurrentModelParameter.ModelType == ModelType.Online)
+            {
+                if (String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl) ||
+                    String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey) ||
+                    String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName))
+                {
+                    ShowMessageBox("注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！", "我明白上述信息")
+                                                            .GetAwaiter().GetResult();
+
+                    builder.AddOpenAIChatCompletion("gpt-4o-mini",
+                    "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
                     {
-                        Log.Information("Waiting for request...");
-                        HttpListenerContext context = voiceConnectionHandlerInstance._listener.GetContextAsync()
-                            .GetAwaiter().GetResult();
-                        voiceConnectionHandlerInstance.ProcessRequest(context).GetAwaiter().GetResult();
-                        Log.Information("Received request...");
+                        BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions")
+                    });
+                }
+                else
+                {
+                    builder.AddOpenAIChatCompletion(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName,
+                    m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
+                    {
+                        BaseAddress = new Uri(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl)
+                    });
+                }
+            }
+            else if (m_CurrentModelParameter.ModelType == ModelType.Local)
+            {
+                // TODO: Local Llm Model
+            }
+
+            SemanticKernel = builder.Build();
+
+            try
+            {
+                IChatCompletionService chatCompletionService = SemanticKernel.GetRequiredService<IChatCompletionService>();
+                var testLlmResult = chatCompletionService.GetChatMessageContentsAsync(
+                "你好！",
+                executionSettings: new OpenAIPromptExecutionSettings()
+                {
+                    Temperature = 0.7f
+                },
+                kernel: SemanticKernel);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                ShowMessageBox("连接大语言模型失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
+            }
+
+
+            // 加载FunctionCall插件
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 5;
+            foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
+            {
+                var pluginFiles = Directory.GetFiles(pluginFolder);
+
+                foreach (var file in pluginFiles)
+                {
+                    if (Path.GetExtension(file)==".dll")
+                    {
+                        FunctionCallPluginLoader.LoadPlugin(file, builder);
                     }
                 }
-                catch (Exception e)
-                {
-                    Log.Error(e.Message);
-                    ShowMessageBox("启动语音输入监听服务失败! 端口被占用！", "确定");
-                }
-            });
+            }
 
-            voiceConnectionDetectThread = new Thread(() =>
+
+            // 启动语音输入服务
+            if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
             {
-                while (!CurrentCancellationToken.IsCancellationRequested)
-                {
-                    voiceConnectionHandlerInstance.CheckVoiceClientConnection();
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
-                }
-            });
+                UpdateStatusColor(Color.FromRgb(117, 101, 192));
+                StepperIndex = 6;
 
+                VoiceInputController = new(async (string text) =>
+                {
+                    QueueMessage(text);
+                });
+
+                VoiceInputController.StartListening(CurrentCancellationToken);
+            }
+
+
+            // 启动TTS语音输出服务
+            VoiceOutputController = new(PythonInstance);
+            var voiceOutputInferenceCode = File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
+            var scripts = new List<string>();
+            scripts.Add(voiceOutputInferenceCode);
+            PythonInstance.StartPythonEngine(CurrentCancellationToken, scripts);
 
             if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
             {
-                Log.Information("Start VoiceConnectionHandler handler.");
-
-                voiceConnectionHandlerThread.Start();
-
-                voiceConnectionDetectThread.Start();
-
-                voiceInputServerStartInfo = new ProcessStartInfo
-                {
-                    FileName = CurrentWorkingDirectory + @"\Python3.9.13\python.exe",
-                    Arguments = CurrentWorkingDirectory + @"\CapsWriter-Offline\core_server.py",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = CurrentWorkingDirectory + @"\CapsWriter-Offline\"
-                };
-                process2 = new Process { StartInfo = voiceInputServerStartInfo };
-                if (!process2.Start())
-                {
-                    Log.Error("Failed to start voice input server.");
-                    ShowMessageBox("启动语音输入服务失败!", "确定");
-                }
-
-                String testVoiceInputServer = "";
-                // 启动一个线程来读取标准输出和错误流
-                Thread outputThread2 = new Thread(() =>
-                {
-                    try
-                    {
-                        while (!process2.HasExited)
-                        {
-                            string output = process2.StandardOutput.ReadLine();
-                            if (output != null)
-                            {
-                                testVoiceInputServer += output;
-                                Util.LoggerVoiceInputServer.Information(output);
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        Log.Error("Voice input  exited.");
-                    }
-                });
-                outputThread2.Start();
-
-                Thread errorThread2 = new Thread(() =>
-                {
-                    try
-                    {
-                        while (!process2.HasExited)
-                        {
-                            string error = process2.StandardError.ReadLine();
-                            if (error != null)
-                            {
-                                Util.LoggerVoiceInputServer.Information(error);
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        Log.Error("Voice input server exited.");
-                    }
-                });
-                errorThread2.Start();
-
-                voiceInputClientStartInfo = new ProcessStartInfo
-                {
-                    FileName = CurrentWorkingDirectory + @"\Python3.9.13\python.exe",
-                    Arguments = CurrentWorkingDirectory + @"\CapsWriter-Offline\core_client.py",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = CurrentWorkingDirectory + @"\CapsWriter-Offline\"
-                };
-
-                TimeSpan timeout = TimeSpan.FromSeconds(60);
-                DateTime startTime = DateTime.Now;
-                while (!CurrentSubCancellationToken.IsCancellationRequested)
-                {
-                    if (testVoiceInputServer.Contains("开始服务"))
-                    {
-                        GlobalStatus.Instance.IsVoiceInputServerOnline = true;
-                        StepperIndex = 1;
-                        break;
-                    }
-
-                    // 检查是否已经超过了预定的最大执行时间
-                    if (DateTime.Now - startTime > timeout)
-                    {
-                        Console.WriteLine("Timeout: Voice input server maybe not started");
-                        break;
-                    }
-
-                    Log.Information("Waiting for voice input server to start.");
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
-                }
-
-                Log.Information("Voice input server started.");
-
-                process3 = new Process { StartInfo = voiceInputClientStartInfo };
-
-                if (!process3.Start())
-                {
-                    Log.Error("Failed to start voice input client.");
-                    ShowMessageBox("启动语音输入客户端失败!", "确定");
-                }
-
-                // 启动一个线程来读取标准输出和错误流
-                Thread outputThread3 = new Thread(() =>
-                {
-                    try
-                    {
-                        while (!process3.HasExited)
-                        {
-                            string output = process3.StandardOutput.ReadLine();
-                            if (output != null)
-                            {
-                                Util.LoggerVoiceInputClient.Information(output);
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        Log.Error("Voice input client exited.");
-                    }
-                });
-                outputThread3.Start();
-
-                Thread errorThread3 = new Thread(() =>
-                {
-                    try
-                    {
-                        while (!process3.HasExited)
-                        {
-                            string error = process3.StandardError.ReadLine();
-                            if (error != null)
-                            {
-                                Util.LoggerVoiceInputClient.Information(error);
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        Log.Error("Voice input client exited.");
-                    }
-                });
-                errorThread3.Start();
+                StepperIndex = 7;
             }
 
+
+            // 启动空闲自动询问线程
+            idleAskThread = new Thread(() =>
+            {
+                Log.Information("Idle ask thread started.");
+
+                if (m_CurrentCharacterPreset.IdleAskMeTime >= 10)
+                {
+                    TimeSpan timeout = TimeSpan.FromSeconds(m_CurrentCharacterPreset.IdleAskMeTime);
+
+                    while (!CurrentCancellationToken.IsCancellationRequested)
+                    {
+                        DateTime startTime = DateTime.Now;
+                        startTime = LastInferenceTime;
+
+                        // 检查是否已经超过了预定的最大执行时间
+                        if (DateTime.Now - startTime > timeout)
+                        {
+                            Log.Information("Idle ask thread timeout. Send idle ask message.");
+
+                            string idleAskMessage = m_CurrentCharacterPreset.IdleAskMeMessage;
+
+                            QueueMessage(idleAskMessage);
+
+                            LastInferenceTime = DateTime.Now;
+                        }
+
+                        Thread.Sleep(TimeSpan.FromSeconds(1));
+                    }
+                }
+
+                Log.Information("Idle ask thread stopped.");
+            });
+            idleAskThread.Start();
+
+
+            // 
             if (m_CurrentModelParameter.ModelType == ModelType.Local)
             {
                 Log.Information("Local model mode enabled.");
-
-                string localModelPath = m_LocalModelRootPath + "/" + SelectedLocalModelFileName;
-                Log.Information("Local model path: {0}", localModelPath);
-
-                if (localLlmController == null)
-                {
-                    localLlmController = new(
-                        localModelPath,
-                        m_CurrentModelParameter.LocalLlmCreateInfo
-                        , llmResponseCallback);
-                }
-
-                localLlmController.ReloadConfig(m_CurrentModelParameter.LocalLlmCreateInfo);
-                localLlmController.LoadModel();
-
-                try
-                {
-                    string historyFilePath = CurrentWorkingDirectory + "/History/ChatHistory.json";
-
-                    ChatContent chatContent = new();
-                    if (!File.Exists(historyFilePath))
-                    {
-                        m_CurrentCharacterPreset.ChatContent.YourName = m_CurrentCharacterPreset.YourName;
-                        m_CurrentCharacterPreset.ChatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                        localLlmController.LoadPresetMessage(m_CurrentCharacterPreset.ChatContent);
-                        chatContent = m_CurrentCharacterPreset.ChatContent;
-                        chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                        chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                    }
-                    else
-                    {
-                        string historyJson = File.ReadAllText(historyFilePath);
-                        var chatHistory = JsonConvert.DeserializeObject<ChatContent>(historyJson);
-                        if (chatHistory == null)
-                        {
-                            ShowMessageBox("加载历史聊天记录失败! 错误信息：ChatHistory.json 文件内容为空！加载默认预设！", "确定");
-                            m_CurrentCharacterPreset.ChatContent.YourName = m_CurrentCharacterPreset.YourName;
-                            m_CurrentCharacterPreset.ChatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                            localLlmController.LoadPresetMessage(m_CurrentCharacterPreset.ChatContent);
-                            chatContent = m_CurrentCharacterPreset.ChatContent;
-                            chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                            chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                        }
-                        else
-                        {
-                            chatHistory.YourName = m_CurrentCharacterPreset.YourName;
-                            chatHistory.CharacterName = m_CurrentCharacterPreset.Name;
-                            localLlmController.LoadPresetMessage(chatHistory);
-                            chatContent = chatHistory;
-                            chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                            chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                        }
-                    }
-
-                    foreach (var message in chatContent.Messages)
-                    {
-                        switch (message.Role)
-                        {
-                            case Role.System:
-                            {
-                                HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
-                                break;
-                            }
-                            case Role.Assistant:
-                            {
-                                HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-                                    ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-                                    : "<(未知)>:";
-                                HistoryTextBlock += "\n" + message.Content + "\n\n";
-                                break;
-                            }
-                            case Role.User:
-                            {
-                                HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" + message.Content +
-                                                    "\n\n";
-                                break;
-                            }
-                        }
-                    }
-
-                    CaretIndex = Int32.MaxValue;
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e.Message);
-                    ShowMessageBox("加载历史聊天记录失败! 错误信息：" + e.Message, "确定");
-                }
             }
             else if (m_CurrentModelParameter.ModelType == ModelType.Online)
             {
@@ -1119,202 +902,88 @@ public partial class StatusPageViewModel : PageBase
                     m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl);
                 Log.Information("Online model api key: {OnlineModelApiKey}",
                     m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey);
+            }
 
-                if (onlineLlmController == null)
+
+            // 加载历史对话信息
+            try
+            {
+                string historyFilePath = Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json");
+                ChatContent chatContent = new();
+                if (!File.Exists(historyFilePath))
                 {
-                    onlineLlmController = new(
-                        new OnlineLlmCreateInfo()
-                        {
-                            OnlineModelName = m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName,
-                            OnlineModelUrl = m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl,
-                            OnlineModelApiKey = m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey,
-                            Temperature = m_CurrentModelParameter.OnlineLlmCreateInfo.Temperature,
-                            ContextSize = m_CurrentModelParameter.OnlineLlmCreateInfo.ContextSize,
-                        }, llmResponseCallback);
+                    File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(new ChatContent()));
                 }
-
-                onlineLlmController.ReloadConfig(m_CurrentModelParameter.OnlineLlmCreateInfo);
-
-                try
+                else
                 {
-                    string historyFilePath = CurrentWorkingDirectory + "/History/ChatHistory.json";
-
-                    ChatContent chatContent = new();
-                    if (!File.Exists(historyFilePath))
+                    string historyJson = File.ReadAllText(historyFilePath);
+                    var chatHistory = JsonConvert.DeserializeObject<ChatContent>(historyJson);
+                    if (chatHistory.Messages!=null)
                     {
-                        m_CurrentCharacterPreset.ChatContent.YourName = m_CurrentCharacterPreset.YourName;
-                        m_CurrentCharacterPreset.ChatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                        onlineLlmController.LoadPresetMessage(m_CurrentCharacterPreset.ChatContent);
-                        chatContent = m_CurrentCharacterPreset.ChatContent;
-                        chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                        chatContent.CharacterName = m_CurrentCharacterPreset.Name;
+                        chatContent.Messages = chatHistory.Messages;
                     }
-                    else
-                    {
-                        string historyJson = File.ReadAllText(historyFilePath);
-                        var chatHistory = JsonConvert.DeserializeObject<ChatContent>(historyJson);
-                        if (chatHistory == null)
-                        {
-                            ShowMessageBox("加载历史聊天记录失败! 错误信息：ChatHistory.json 文件内容为空！加载默认预设！", "确定");
-                            m_CurrentCharacterPreset.ChatContent.YourName = m_CurrentCharacterPreset.YourName;
-                            m_CurrentCharacterPreset.ChatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                            onlineLlmController.LoadPresetMessage(m_CurrentCharacterPreset.ChatContent);
-                            chatContent = m_CurrentCharacterPreset.ChatContent;
-                            chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                            chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                        }
-                        else
-                        {
-                            chatHistory.YourName = m_CurrentCharacterPreset.YourName;
-                            chatHistory.CharacterName = m_CurrentCharacterPreset.Name;
-                            onlineLlmController.LoadPresetMessage(chatHistory);
-                            chatContent = chatHistory;
-                            chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                            chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                        }
-                    }
+                }
+                chatContent.YourName = m_CurrentCharacterPreset.YourName;
+                chatContent.CharacterName = m_CurrentCharacterPreset.Name;
 
-                    foreach (var message in chatContent.Messages)
+                HistoryTextBlock += "当前人设信息："+ m_CurrentCharacterPreset.PresetContent + "\n";
+
+                foreach (var message in chatContent.Messages)
+                {
+                    switch (message.Role)
                     {
-                        switch (message.Role)
-                        {
-                            case Role.System:
+                        case Role.System:
                             {
                                 HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
+                                ChatMessages.AddSystemMessage(message.Content);
                                 break;
                             }
-                            case Role.Assistant:
+                        case Role.Assistant:
                             {
                                 HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
                                     ? ("<" + m_CurrentCharacterPreset.Name + ">:")
                                     : "<(未知)>:";
                                 HistoryTextBlock += "\n" + message.Content + "\n\n";
+                                ChatMessages.AddAssistantMessage(message.Content);
                                 break;
                             }
-                            case Role.User:
+                        case Role.User:
                             {
-                                HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" + message.Content +
-                                                    "\n\n";
+                                HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
+                                    ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
+                                    : "<(未知)>:";
+                                HistoryTextBlock += "\n" + message.Content + "\n\n";
+                                ChatMessages.AddUserMessage(message.Content);
                                 break;
                             }
-                        }
                     }
+                }
 
-                    CaretIndex = Int32.MaxValue;
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e.Message);
-                    ShowMessageBox("加载历史聊天记录失败! 错误信息：" + e.Message, "确定");
-                }
+                CaretIndex = Int32.MaxValue;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                ShowMessageBox("加载历史聊天记录失败! 错误信息：" + e.Message, "确定");
             }
 
-            voiceAutoInputThread = new Thread(() =>
-            {
-                if (m_CurrentModelParameter.ModelType == ModelType.Local)
-                {
-                    while (!CurrentCancellationToken.IsCancellationRequested)
-                    {
-                        lock (voiceConnectionHandlerInstance._lock)
-                        {
-                            if (voiceConnectionHandlerInstance.VoiceText != "")
-                            {
-                                HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" +
-                                                    voiceConnectionHandlerInstance.VoiceText + "\n\n";
-                                CaretIndex = Int32.MaxValue;
-                                Log.Information("Voice text: {0}", voiceConnectionHandlerInstance.VoiceText);
-                                try
-                                {
-                                    localLlmController
-                                        .Infer(new Message(Role.User, voiceConnectionHandlerInstance.VoiceText))
-                                        .GetAwaiter().GetResult();
-                                }
-                                catch (Exception e)
-                                {
-                                    Log.Error(e.Message);
-                                    ShowMessageBox("请求大模型推理数据失败! 错误信息：" + e.Message, "确定");
-                                }
 
-                                voiceConnectionHandlerInstance.VoiceText = "";
-                            }
-                        }
+            // 启动消息处理线程
+            StartMessageProcessing();
 
-                        Thread.Sleep(TimeSpan.FromMilliseconds(100));
-                    }
-                }
-                else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-                {
-                    Log.Information("Voice input mode enabled.");
-                    while (!CurrentCancellationToken.IsCancellationRequested)
-                    {
-                        if (voiceConnectionHandlerInstance.VoiceText != "")
-                        {
-                            HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" +
-                                                voiceConnectionHandlerInstance.VoiceText + "\n\n";
-                            CaretIndex = Int32.MaxValue;
-                            Log.Information("Voice text: {0}", voiceConnectionHandlerInstance.VoiceText);
-                            try
-                            {
-                                onlineLlmController
-                                    .Infer(new Message(Role.User, voiceConnectionHandlerInstance.VoiceText))
-                                    .GetAwaiter().GetResult();
-                            }
-                            catch (Exception e)
-                            {
-                                Log.Error(e.Message);
-                                ShowMessageBox("请求大模型推理数据失败! 错误信息：" + e.Message, "确定");
-                            }
 
-                            voiceConnectionHandlerInstance.VoiceText = "";
-                        }
-
-                        Thread.Sleep(TimeSpan.FromMilliseconds(100));
-                    }
-                }
-            });
-            voiceAutoInputThread.Start();
-
-            if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
-            {
-                TimeSpan timeout = TimeSpan.FromSeconds(60);
-                DateTime startTime = DateTime.Now;
-
-                while (!CurrentSubCancellationToken.IsCancellationRequested)
-                {
-                    if (GlobalStatus.Instance.IsVoiceConnectionEstablished)
-                    {
-                        GlobalStatus.Instance.IsVoiceInputClientOnline = true;
-                        StepperIndex = 2;
-                        break;
-                    }
-
-                    // 检查是否已经超过了预定的最大执行时间
-                    if (DateTime.Now - startTime > timeout)
-                    {
-                        Log.Information("Timeout: Voice input client maybe started");
-                        break;
-                    }
-
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
-                }
-            }
-
-            string voiceInputRules = CurrentWorkingDirectory + "/CapsWriter-Offline";
-            File.WriteAllText(voiceInputRules + "/hot-zh.txt", m_CurrentCharacterPreset.HotZhWords);
-            File.WriteAllText(voiceInputRules + "/hot-rule.txt", m_CurrentCharacterPreset.HotRules);
-
-            // start plugins
+            // 加载额外插件
             foreach (var pluginName in m_CurrentCharacterPreset.EnabledPlugins)
             {
                 var processStartInfo = new ProcessStartInfo
                 {
-                    FileName = CurrentWorkingDirectory + @"\Python3.9.13\python.exe",
-                    Arguments = CurrentWorkingDirectory + @"\Plugin\" + pluginName + @"\main.py",
+                    FileName = Path.Join(CommonConfig.PythonRootPath, "Python3.9.13/python.exe"),
+                    Arguments = Path.Join(CommonConfig.PluginRootPath, pluginName + "/main.py"),
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = CurrentWorkingDirectory + @"\Plugin\" + pluginName
+                    WorkingDirectory =Path.Join(CommonConfig.PluginRootPath, pluginName)
                 };
 
                 var process = new Process { StartInfo = processStartInfo };
@@ -1322,13 +991,24 @@ public partial class StatusPageViewModel : PageBase
                 if (!process.Start())
                 {
                     Log.Error("Failed to start plugin: " + pluginName);
-                    ShowMessageBox("启动语插件 " + pluginName + " 失败!", "确定");
+                    ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定");
                 }
             }
 
-            RunCodeProtection = false;
-        });
 
+            // 启动成功
+            InfoBarTitle = "当前状态：启动成功！\n";
+            UpdateStatusColor(Color.FromRgb(36, 192, 81));
+
+            LastInferenceTime = DateTime.Now;
+
+            RunningState = true;
+
+            RunCodeProtection = false;
+        })
+        {
+
+        };
         startThread.Start();
     }
 
@@ -1366,51 +1046,6 @@ public partial class StatusPageViewModel : PageBase
     [ObservableProperty] private string _infoBarMessage;
     [ObservableProperty] private SukiUI.Enums.NotificationType _infoBarSeverity;
     [ObservableProperty] private string _runButtonText;
-
-    private void llmResponseCallback(string message)
-    {
-        string audioText = "";
-        string processedMessage = message;
-
-        foreach (var pattern in m_CurrentCharacterPreset.ExceptTextRegexExpression)
-        {
-            if (!string.IsNullOrEmpty(pattern))
-            {
-                processedMessage = Regex.Replace(processedMessage, pattern, match =>
-                {
-                    Log.Information($"Removed: {match.Value}");
-                    return string.Empty;
-                });
-            }
-
-            processedMessage = processedMessage == "" ? message : processedMessage;
-        }
-
-        audioText = processedMessage == "" ? message : processedMessage;
-
-        Task.Run(async () =>
-            {
-                var result = await bertVitsConnectionHandlerInstance.SendHttpRequestForAudioAsync(audioText);
-                if (!result.Key)
-                {
-                    ShowMessageBox("请求TTS服务失败! 错误信息：" + result.Value, "确定");
-                }
-            })
-            .GetAwaiter().GetResult();
-
-        /*if (HistoryTextBlock.Length > 8192)
-        {
-            HistoryTextBlock = HistoryTextBlock.Substring(HistoryTextBlock.Length - 8192);
-        }*/
-
-        HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-            ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-            : "<(未知)>:";
-        HistoryTextBlock += "\n" + message + "\n\n";
-        CaretIndex = Int32.MaxValue;
-    }
-
-
     [ObservableProperty] private string _historyTextBlock;
     [ObservableProperty] private string _inputTextBox;
 
@@ -1427,39 +1062,21 @@ public partial class StatusPageViewModel : PageBase
             return;
         }
 
-        if (m_CurrentModelParameter.ModelType == ModelType.Local)
+        if (SemanticTextMemory != null && PythonInstance != null  && SemanticKernel != null && VoiceOutputController != null)
         {
-            HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" + InputTextBox + "\n\n";
-            CaretIndex = Int32.MaxValue;
-            try
+            if (m_CurrentModelParameter.ModelType == ModelType.Local || m_CurrentModelParameter.ModelType == ModelType.Online)
             {
-                await localLlmController.Infer(new Message(Role.User, InputTextBox));
+                QueueMessage(InputTextBox);
                 InputTextBox = "";
             }
-            catch (Exception e)
+            else
             {
-                Log.Error(e.Message);
-                SukiHost.ShowDialog(new StandardDialog("请求大模型推理数据失败! 错误信息：" + e.Message, "确定"));
-            }
-        }
-        else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-        {
-            HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" + InputTextBox + "\n\n";
-            CaretIndex = Int32.MaxValue;
-            try
-            {
-                await onlineLlmController.Infer(new Message(Role.User, InputTextBox));
-                InputTextBox = "";
-            }
-            catch (Exception e)
-            {
-                Log.Error(e.Message);
-                SukiHost.ShowDialog(new StandardDialog("请求大模型推理数据失败! 错误信息：" + e.Message, "确定"));
+                SukiHost.ShowDialog(new StandardDialog("配置文件中检测到未知的输入方式，请检查并修改配置文件后重新运行!", "确定"));
             }
         }
         else
         {
-            SukiHost.ShowDialog(new StandardDialog("配置文件中检测到未知的输入方式，请检查并修改配置文件后重新运行!", "确定"));
+            SukiHost.ShowDialog(new StandardDialog("当前服务未启动或初始化失败，请检查服务状态后重试!", "确定"));
         }
     }
 
@@ -1467,115 +1084,56 @@ public partial class StatusPageViewModel : PageBase
     [RelayCommand]
     private async Task ClearHistory()
     {
+
+
+
+        ChatMessages.Clear();
         HistoryTextBlock = "";
 
         try
         {
-            File.WriteAllText(CurrentWorkingDirectory + "/History/ChatHistory.json",
-                JsonConvert.SerializeObject(m_CurrentCharacterPreset.ChatContent));
+            var historyFilePath = Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json");
 
-            if (m_CurrentModelParameter.ModelType == ModelType.Local)
+            ChatContent chatContent = new();
+            chatContent.YourName = m_CurrentCharacterPreset.YourName;
+            chatContent.CharacterName = m_CurrentCharacterPreset.Name;
+
+            File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(chatContent));
+
+            HistoryTextBlock += "当前人设信息："+ m_CurrentCharacterPreset.PresetContent + "\n";
+
+            foreach (var message in chatContent.Messages)
             {
-                try
+                switch (message.Role)
                 {
-                    string historyFilePath = CurrentWorkingDirectory + "/History/ChatHistory.json";
-
-                    ChatContent chatContent = new();
-
-                    m_CurrentCharacterPreset.ChatContent.YourName = m_CurrentCharacterPreset.YourName;
-                    m_CurrentCharacterPreset.ChatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                    localLlmController.LoadPresetMessage(m_CurrentCharacterPreset.ChatContent);
-                    chatContent = m_CurrentCharacterPreset.ChatContent;
-                    chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                    chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-
-                    File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(chatContent));
-
-                    foreach (var message in chatContent.Messages)
-                    {
-                        switch (message.Role)
+                    case Role.System:
                         {
-                            case Role.System:
-                            {
-                                HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
-                                break;
-                            }
-                            case Role.Assistant:
-                            {
-                                HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-                                    ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-                                    : "<(未知)>:";
-                                HistoryTextBlock += "\n" + message.Content + "\n\n";
-                                break;
-                            }
-                            case Role.User:
-                            {
-                                HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" + message.Content +
-                                                    "\n\n";
-                                break;
-                            }
+                            HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
+                            ChatMessages.AddSystemMessage(message.Content);
+                            break;
                         }
-                    }
-
-                    CaretIndex = Int32.MaxValue;
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e.Message);
-                    SukiHost.ShowDialog(new StandardDialog("加载历史聊天记录失败! 错误信息：" + e.Message, "确定"));
+                    case Role.Assistant:
+                        {
+                            HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
+                                ? ("<" + m_CurrentCharacterPreset.Name + ">:")
+                                : "<(未知)>:";
+                            HistoryTextBlock += "\n" + message.Content + "\n\n";
+                            ChatMessages.AddAssistantMessage(message.Content);
+                            break;
+                        }
+                    case Role.User:
+                        {
+                            HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
+                                ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
+                                : "<(未知)>:";
+                            HistoryTextBlock += "\n" + message.Content + "\n\n";
+                            ChatMessages.AddUserMessage(message.Content);
+                            break;
+                        }
                 }
             }
-            else if (m_CurrentModelParameter.ModelType == ModelType.Online)
-            {
-                try
-                {
-                    string historyFilePath = CurrentWorkingDirectory + "/History/ChatHistory.json";
 
-                    ChatContent chatContent = new();
-
-                    m_CurrentCharacterPreset.ChatContent.YourName = m_CurrentCharacterPreset.YourName;
-                    m_CurrentCharacterPreset.ChatContent.CharacterName = m_CurrentCharacterPreset.Name;
-                    onlineLlmController.LoadPresetMessage(m_CurrentCharacterPreset.ChatContent);
-                    chatContent = m_CurrentCharacterPreset.ChatContent;
-                    chatContent.YourName = m_CurrentCharacterPreset.YourName;
-                    chatContent.CharacterName = m_CurrentCharacterPreset.Name;
-
-                    File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(chatContent));
-
-                    foreach (var message in chatContent.Messages)
-                    {
-                        switch (message.Role)
-                        {
-                            case Role.System:
-                            {
-                                HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
-                                break;
-                            }
-                            case Role.Assistant:
-                            {
-                                HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-                                    ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-                                    : "<(未知)>:";
-                                HistoryTextBlock += "\n" + message.Content + "\n\n";
-                                break;
-                            }
-                            case Role.User:
-                            {
-                                HistoryTextBlock += "<" + m_CurrentCharacterPreset.YourName + ">:\n" + message.Content +
-                                                    "\n\n";
-                                break;
-                            }
-                        }
-                    }
-
-                    CaretIndex = Int32.MaxValue;
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e.Message);
-                    SukiHost.ShowDialog(new StandardDialog("加载历史聊天记录失败! 错误信息：" + e.Message, "确定"));
-                }
-            }
+            CaretIndex = Int32.MaxValue;
         }
         catch (Exception e)
         {

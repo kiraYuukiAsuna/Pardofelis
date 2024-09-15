@@ -23,7 +23,7 @@ using PardofelisUI.Pages.VoiceInputConfig;
 using SukiUI;
 using SukiUI.Controls;
 using SukiUI.Models;
-using BertVits2ConfigPageViewModel = PardofelisUI.Pages.BertVits2Config.BertVits2ConfigPageViewModel;
+using BertVits2ConfigPageViewModel = PardofelisUI.Pages.VoiceOutputConfig.VoiceOutputConfigPageViewModel;
 using CharacterPresetConfigPageViewModel = PardofelisUI.Pages.CharacterPresetPage.CharacterPresetConfigPageViewModel;
 
 namespace PardofelisUI;
@@ -72,7 +72,9 @@ public class PageNavigationService
 
 public partial class MainWindowViewModel : PageBase
 {
-    public MainWindowViewModel() : base("满穗AI助手", MaterialIconKind.Home)
+    [ObservableProperty]
+    private DynamicUIConfig _dynamicUIConfig;
+    public MainWindowViewModel() : base(DynamicUIConfig.AppName, MaterialIconKind.Home)
     {
         _theme = SukiTheme.GetInstance();
 

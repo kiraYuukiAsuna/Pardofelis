@@ -81,7 +81,7 @@
                     </suki:BusyArea>
                 </suki:GroupBox>
             </suki:GlassCard>
-            <suki:GlassCard Width="600" Margin="15">
+            <suki:GlassCard Width="800" Margin="15">
                 <suki:GroupBox Header="运行控制面板">
                     <StackPanel Margin="25,0" Spacing="10">
                         <ToolTip>准备好了吗？开始启动！</ToolTip>
@@ -112,7 +112,7 @@
                     </StackPanel>
                 </suki:GroupBox>
             </suki:GlassCard>
-            <suki:GlassCard Width="600" Margin="15">
+            <suki:GlassCard Width="800" Margin="15">
                 <suki:GroupBox Header="文本对话区域">
                     <StackPanel Margin="25,0" Spacing="10">
                         <ToolTip>文本对话区域</ToolTip>

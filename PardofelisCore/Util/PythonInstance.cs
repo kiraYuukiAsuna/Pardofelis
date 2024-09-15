@@ -36,7 +36,10 @@ public class PythonInstance
 
     public void ShutdownPythonEngine()
     {
-        GlobalScope.Dispose();
+        using (Py.GIL())
+        {
+            GlobalScope.Dispose();
+        }
         AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);
         PythonEngine.Shutdown();
         AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);

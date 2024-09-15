@@ -4,9 +4,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             xmlns:bertVits2Config="clr-namespace:PardofelisUI.Pages.BertVits2Config"
-             x:DataType="bertVits2Config:BertVits2ConfigPageViewModel"
-             x:Class="PardofelisUI.Pages.BertVits2Config.BertVits2ConfigPage">
+             xmlns:VoiceOutputConfig="clr-namespace:PardofelisUI.Pages.VoiceOutputConfig"
+             x:DataType="VoiceOutputConfig:VoiceOutputConfigPageViewModel"
+             x:Class="PardofelisUI.Pages.VoiceOutputConfig.VoiceOutputConfigPage">
     <ScrollViewer>
         <controls:GlassCard>
             <StackPanel>
@@ -25,24 +25,6 @@
                                    Width="100"
                                    Value="{Binding Id}" Increment="1"
                                    Minimum="0" />
-                </Panel>
-                <Panel>
-                    <TextBlock Margin="0,0,0,0"
-                               VerticalAlignment="Center" HorizontalAlignment="Left"
-                               FontWeight="Bold"
-                               Text="Format:" />
-                    <TextBox VerticalAlignment="Top" HorizontalAlignment="Right"
-                             Width="200"
-                             Text="{Binding Format}" />
-                </Panel>
-                <Panel>
-                    <TextBlock Margin="0,0,0,0"
-                               VerticalAlignment="Center" HorizontalAlignment="Left"
-                               FontWeight="Bold"
-                               Text="Language:" />
-                    <TextBox VerticalAlignment="Top" HorizontalAlignment="Right"
-                             Width="200"
-                             Text="{Binding Lang}" />
                 </Panel>
                 <Panel>
                     <TextBlock Margin="0,0,0,0"

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using Avalonia;
 using Avalonia.Collections;
@@ -9,8 +8,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
-using MyElysiaCore;
-using MyElysiaRunner;
+using PardofelisCore.Config;
 using PardofelisUI.ControlsLibrary.Dialog;
 using SukiUI.Controls;
 
@@ -23,7 +21,7 @@ public partial class LlmConfigPageViewModel : PageBase
         RescanConfig();
     }
 
-    private string m_ModelConfigRootPath = System.IO.Directory.GetCurrentDirectory() + "/Config/ModelConfig";
+    private string m_ModelConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "ModelConfig");
 
     [ObservableProperty] private string _configName;
 

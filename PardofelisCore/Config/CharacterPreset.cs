@@ -11,15 +11,10 @@ namespace PardofelisCore.Config;
 public struct CharacterPreset
 {
     public string Name { get; set; }
-
     public string YourName { get; set; }
-
-    public ChatContent ChatContent { get; set; }
+    public string PresetContent { get; set; }
     public List<string> ExceptTextRegexExpression { get; set; }
     public List<string> EnabledPlugins { get; set; }
-    public string HotZhWords { get; set; }
-    public string HotRules { get; set; }
-
     public int IdleAskMeTime { get; set; }
     public string IdleAskMeMessage { get; set; }
 
@@ -27,26 +22,22 @@ public struct CharacterPreset
     {
         Name = "";
         YourName = "";
-        ChatContent = new ChatContent();
+        PresetContent = "";
         ExceptTextRegexExpression = new List<string>();
         EnabledPlugins = new List<string>();
-        HotZhWords = "";
-        HotRules = "";
         IdleAskMeTime = -1;
         IdleAskMeMessage = "";
     }
 
-    public CharacterPreset(string name, string yourName, ChatContent chatContent,
+    public CharacterPreset(string name, string yourName, string presetContent,
         List<string> exceptTextRegexExpression,
         List<string> enabledPlugins, string hotZhWords, string hotRules, string idleAskMeMessage, int idleAskMeTime)
     {
         Name = name;
         YourName = yourName;
-        ChatContent = chatContent;
+        PresetContent = presetContent;
         ExceptTextRegexExpression = exceptTextRegexExpression;
         EnabledPlugins = enabledPlugins;
-        HotZhWords = hotZhWords;
-        HotRules = hotRules;
         IdleAskMeTime = idleAskMeTime;
         IdleAskMeMessage = idleAskMeMessage;
     }

@@ -14,12 +14,12 @@ public enum Role
     Tool
 }
 
-public class Message
+public class ChatMessage
 {
     public Role Role;
     public String Content;
 
-    public Message(Role role, String content)
+    public ChatMessage(Role role, String content)
     {
         Role = role;
         Content = content;
@@ -30,12 +30,12 @@ public class ChatContent
 {
     public string CharacterName;
     public string YourName;
-    public List<Message> Messages;
+    public List<ChatMessage> Messages;
 
     public ChatContent()
     {
         CharacterName = "未知";
         YourName = "未知";
-        Messages = new List<Message>();
+        Messages = new List<ChatMessage>();
     }
 }
