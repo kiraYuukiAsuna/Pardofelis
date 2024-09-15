@@ -35,6 +35,10 @@ using File = System.IO.File;
 using PardofelisCore.LlmController.OpenAiModel;
 using System.Text;
 using System.Collections.Concurrent;
+using Avalonia.Input;
+using Avalonia.Controls;
+using System.Windows.Input;
+using ReactiveUI;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -57,6 +61,8 @@ public partial class StatusPageViewModel : PageBase
         InfoBarMessage = "未启动...";
         InfoBarSeverity = SukiUI.Enums.NotificationType.Info;
         StatusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
+
+        HandleEnterKeyCommand = ReactiveCommand.Create<string>(HandleEnterKey);
     }
 
     public void StopIfRunning()
@@ -79,6 +85,8 @@ public partial class StatusPageViewModel : PageBase
 
 
     [ObservableProperty] private SolidColorBrush _statusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
+
+    public ICommand HandleEnterKeyCommand { get; }
 
     partial void OnSelectedModelParameterConfigChanged(string value)
     {
@@ -381,6 +389,10 @@ public partial class StatusPageViewModel : PageBase
             {
                 case "system":
                     {
+                        if(string.IsNullOrEmpty(message.Content))
+                        {
+                            break;
+                        }
                         chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
                         (
                             Role.User,
@@ -391,6 +403,10 @@ public partial class StatusPageViewModel : PageBase
 
                 case "assistant":
                     {
+                        if (string.IsNullOrEmpty(message.Content))
+                        {
+                            break;
+                        }
                         chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
                         (
                             Role.Assistant,
@@ -400,6 +416,10 @@ public partial class StatusPageViewModel : PageBase
                     }
                 case "user":
                     {
+                        if (string.IsNullOrEmpty(message.Content))
+                        {
+                            break;
+                        }
                         chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
                         (
                             Role.User,
@@ -460,7 +480,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         ChatMessages.AddUserMessage(text);
 
         var chatContentBefore = ChatMessagesToChatMessage();
-        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentBefore));
+        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentBefore, Formatting.Indented));
 
         IChatCompletionService chatCompletionService = SemanticKernel.GetRequiredService<IChatCompletionService>();
 
@@ -519,7 +539,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         HistoryTextBlock += "\n" + assistantMessage + "\n\n";
 
         var chatContentAfter = ChatMessagesToChatMessage();
-        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentAfter));
+        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentAfter, Formatting.Indented));
 
         try
         {
@@ -752,12 +772,30 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             StepperIndex = 3;
 
 
-            // 连接大语言模型
+            // 
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 4;
             var builder = Kernel.CreateBuilder();
             builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
+            // 加载FunctionCall插件
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 5;
+            foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
+            {
+                var pluginFiles = Directory.GetFiles(pluginFolder);
+
+                foreach (var file in pluginFiles)
+                {
+                    if (Path.GetExtension(file)==".dll")
+                    {
+                        FunctionCallPluginLoader.LoadPlugin(file, builder);
+                    }
+                }
+            }
+
+
+            // 连接大语言模型
             if (m_CurrentModelParameter.ModelType == ModelType.Online)
             {
                 if (String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl) ||
@@ -804,23 +842,6 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             {
                 Log.Error(e.Message);
                 ShowMessageBox("连接大语言模型失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
-            }
-
-
-            // 加载FunctionCall插件
-            UpdateStatusColor(Color.FromRgb(117, 101, 192));
-            StepperIndex = 5;
-            foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
-            {
-                var pluginFiles = Directory.GetFiles(pluginFolder);
-
-                foreach (var file in pluginFiles)
-                {
-                    if (Path.GetExtension(file)==".dll")
-                    {
-                        FunctionCallPluginLoader.LoadPlugin(file, builder);
-                    }
-                }
             }
 
 
@@ -912,7 +933,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                 ChatContent chatContent = new();
                 if (!File.Exists(historyFilePath))
                 {
-                    File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(new ChatContent()));
+                    File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(new ChatContent(), Formatting.Indented));
                 }
                 else
                 {
@@ -934,12 +955,20 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                     {
                         case Role.System:
                             {
+                                if (string.IsNullOrEmpty(message.Content))
+                                {
+                                    break;
+                                }
                                 HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
                                 ChatMessages.AddSystemMessage(message.Content);
                                 break;
                             }
                         case Role.Assistant:
                             {
+                                if (string.IsNullOrEmpty(message.Content))
+                                {
+                                    break;
+                                }
                                 HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
                                     ? ("<" + m_CurrentCharacterPreset.Name + ">:")
                                     : "<(未知)>:";
@@ -949,6 +978,10 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                             }
                         case Role.User:
                             {
+                                if (string.IsNullOrEmpty(message.Content))
+                                {
+                                    break;
+                                }
                                 HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
                                     ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
                                     : "<(未知)>:";
@@ -1050,7 +1083,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
     [ObservableProperty] private string _inputTextBox;
 
     [RelayCommand]
-    private async Task Infer()
+    private void Infer()
     {
         if (!RunningState)
         {
@@ -1098,7 +1131,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             chatContent.YourName = m_CurrentCharacterPreset.YourName;
             chatContent.CharacterName = m_CurrentCharacterPreset.Name;
 
-            File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(chatContent));
+            File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(chatContent, Formatting.Indented));
 
             HistoryTextBlock += "当前人设信息："+ m_CurrentCharacterPreset.PresetContent + "\n";
 
@@ -1140,5 +1173,10 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             Log.Error(e.Message);
             SukiHost.ShowDialog(new StandardDialog("清空聊天记录失败! 错误信息：" + e.Message, "确定"));
         }
+    }
+
+    private void HandleEnterKey(string text)
+    {
+        Infer();
     }
 }

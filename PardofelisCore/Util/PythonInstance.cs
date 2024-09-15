@@ -24,14 +24,11 @@ public class PythonInstance
 
     private PyModule GlobalScope;
 
+    private nint ThreadState;
+
     public PythonInstance(string pythonRootPath) 
     {
         PythonRootPath = pythonRootPath;
-    }
-
-    ~PythonInstance()
-    {
-        ShutdownPythonEngine();
     }
 
     public void ShutdownPythonEngine()
@@ -41,7 +38,10 @@ public class PythonInstance
             GlobalScope.Dispose();
         }
         AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);
-        PythonEngine.Shutdown();
+        if (PythonEngine.IsInitialized)
+        {
+            PythonEngine.Shutdown();
+        }
         AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);
     }
 
@@ -50,7 +50,7 @@ public class PythonInstance
         Runtime.PythonDLL = Path.Join(PythonRootPath, "python39.dll");
         PythonEngine.Initialize();
 
-        PythonEngine.BeginAllowThreads();
+        ThreadState = PythonEngine.BeginAllowThreads();
 
         using (Py.GIL())
         {

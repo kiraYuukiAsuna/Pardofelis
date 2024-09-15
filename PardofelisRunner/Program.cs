@@ -46,10 +46,27 @@ Thread thread = new Thread(() =>
 thread.Start();
 
 
-// 连接大语言模型
+//
 var builder = Kernel.CreateBuilder();
 builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
 
+
+// 加载FunctionCall插件
+foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
+{
+    var pluginFiles = Directory.GetFiles(pluginFolder);
+
+    foreach (var file in pluginFiles)
+    {
+        if (Path.GetExtension(file)==".dll")
+        {
+            FunctionCallPluginLoader.LoadPlugin(file, builder);
+        }
+    }
+}
+
+
+// 连接大语言模型
 var apiConfig = ModelParameterConfig.ReadConfig(Path.Join(CommonConfig.PardofelisAppDataPath, @"Config\ModelConfig\default.json"));
 if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
     String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelApiKey) ||
@@ -82,21 +99,6 @@ else
 }
 var kernel = builder.Build();
 IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-
-
-// 加载FunctionCall插件
-foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
-{
-    var pluginFiles = Directory.GetFiles(pluginFolder);
-
-    foreach (var file in pluginFiles)
-    {
-        if (Path.GetExtension(file)==".dll")
-        {
-            FunctionCallPluginLoader.LoadPlugin(file, builder);
-        }
-    }
-}
 
 
 // 初始化角色扮演

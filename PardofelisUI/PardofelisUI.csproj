@@ -31,6 +31,7 @@
   
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Remove="Styles\**" />
   </ItemGroup>
   
   <ItemGroup>
@@ -65,14 +66,30 @@
       <DependentUpon>StatusPage.axaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Remove="Styles\**" />
   </ItemGroup>
   
   <ItemGroup>
     <Folder Include="ControlsLibrary\" />
-    <Folder Include="Styles\" />
   </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\PardofelisCore\PardofelisCore.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <AvaloniaXaml Remove="Styles\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <AdditionalFiles Remove="Styles\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Remove="Styles\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Remove="Styles\**" />
   </ItemGroup>
 </Project>

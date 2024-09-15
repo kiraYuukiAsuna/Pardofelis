@@ -9,10 +9,6 @@ namespace PardofelisCore.Util
     public enum RunningStatus
     {
         Stopped,
-        OnLaunchVoiceInputModel,
-        OnLaunchEmbeddingModel,
-        OnLaunchLlmModel,
-        OnLaunchVoiceOutputModel,
         Running
     }
 
