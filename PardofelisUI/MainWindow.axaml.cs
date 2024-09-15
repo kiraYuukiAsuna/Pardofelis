@@ -13,6 +13,8 @@ public partial class MainWindow : SukiWindow
         InitializeComponent();
 
         this.Closing += OnMainWindowClosing;
+
+        DialogHost.Manager = DynamicUIConfig.GlobalDialogManager;
     }
 
     private void MenuItem_OnClick(object? sender, RoutedEventArgs e)

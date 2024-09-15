@@ -1,10 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
-using PardofelisUI.ControlsLibrary.Dialog;
-using SukiUI.Controls;
 using PardofelisCore.Config;
 using System.IO;
+using SukiUI.Dialogs;
 
 namespace PardofelisUI.Pages.VoiceOutputConfig;
 
@@ -57,6 +56,11 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
         };
 
         PardofelisCore.Config.VoiceOutputConfig.WriteConfig(TTSConfigPath, ttsConfig);
-        SukiHost.ShowDialog(new StandardDialog("保存配置文件成功!", "确定"));
+
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithTitle("提示！")
+            .WithContent("保存配置文件成功!")
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
     }
 }

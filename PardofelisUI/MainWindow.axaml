@@ -7,9 +7,10 @@
                  xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
                  xmlns:PardofelisUI="clr-namespace:PardofelisUI"
                  xmlns:models="clr-namespace:SukiUI.Models;assembly=SukiUI"
-                 xmlns:converters1="clr-namespace:PardofelisUI.Converters"
+                 xmlns:converters="clr-namespace:PardofelisUI.Converters"
 
                  Title="{Binding DynamicUIConfig.AppName}"
+                 BackgroundAnimationEnabled="{Binding AnimationsEnabled}"
                  d:DesignHeight="450"
                  d:DesignWidth="800"
                  x:DataType="PardofelisUI:MainWindowViewModel"
@@ -17,7 +18,9 @@
                  IsMenuVisible="True"
                  IsTitleBarVisible="True"
                  mc:Ignorable="d">
-
+	<suki:SukiWindow.Hosts>
+		<suki:SukiDialogHost Name="DialogHost"/>
+	</suki:SukiWindow.Hosts>
     <suki:SukiWindow.MenuItems>
         <MenuItem Header="亮暗与背景动画">
             <MenuItem Command="{Binding ToggleBaseThemeCommand}" Header="{Binding BaseTheme}">
@@ -29,7 +32,7 @@
             <MenuItem Command="{Binding ToggleAnimationsCommand}" Header="Animations">
                 <MenuItem.Icon>
                     <avalonia:MaterialIcon
-                        Kind="{Binding AnimationsEnabled, Converter={x:Static converters1:BoolToIconConverters.Animation}}" />
+                        Kind="{Binding AnimationsEnabled, Converter={x:Static converters:BoolToIconConverters.Animation}}" />
                 </MenuItem.Icon>
             </MenuItem>
         </MenuItem>

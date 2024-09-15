@@ -141,26 +141,6 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </StackPanel>
-                            <StackPanel Orientation="Vertical" Spacing="10">
-                                <TextBlock Margin="0,0,0,0"
-                                           VerticalAlignment="Center" HorizontalAlignment="Left"
-                                           FontWeight="Bold"
-                                           Text="HotRules:" />
-                                <TextBox Width="600" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                         TextWrapping="Wrap"
-                                         AcceptsReturn="True"
-                                         Text="{Binding HotRulesContentViewModel}" />
-                            </StackPanel>
-                            <StackPanel Orientation="Vertical" Spacing="10">
-                                <TextBlock Margin="0,0,0,0"
-                                           VerticalAlignment="Center" HorizontalAlignment="Left"
-                                           FontWeight="Bold"
-                                           Text="HotWords:" />
-                                <TextBox Width="600" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                         TextWrapping="Wrap"
-                                         AcceptsReturn="True"
-                                         Text="{Binding HotZhWordsDataGridContent}" />
-                            </StackPanel>
                             <Panel>
                                 <TextBlock Margin="0,0,0,0"
                                            VerticalAlignment="Center" HorizontalAlignment="Left"

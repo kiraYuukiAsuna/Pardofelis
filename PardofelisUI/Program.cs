@@ -1,12 +1,8 @@
 ﻿using Avalonia;
 using ShowMeTheXaml;
 using System;
-using System.Diagnostics;
-using System.Linq;
 using Avalonia.Dialogs;
-using PardofelisUI.ControlsLibrary.Dialog;
 using Serilog;
-using SukiUI.Controls;
 using System.IO;
 using PardofelisCore.Config;
 
