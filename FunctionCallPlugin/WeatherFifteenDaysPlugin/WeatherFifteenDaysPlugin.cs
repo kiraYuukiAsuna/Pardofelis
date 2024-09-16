@@ -27,7 +27,7 @@ public class WeatherOneDayPlugin
         [Description("请输入一个城市名称")] string inputCity
         )
     {
-        string filePath = "City.txt";
+        string filePath =Path.Join(Config.CurrentPluginWorkingDirectory, "City.txt");
 
         // 读取文件内容到字典中
         var cityUrlMap = new Dictionary<string, string>();
