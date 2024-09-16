@@ -457,3 +457,4 @@ $RECYCLE.BIN/
 .idea/
 PardofelisAppData/
 runtimes/
+build/

@@ -24,11 +24,14 @@ public class FunctionCallPluginLoader
                 bool foundKernelFunction = false;
                 foreach (var method in methods)
                 {
-                    var attributes = method.GetCustomAttributes(typeof(KernelFunctionAttribute), false);
-                    if (attributes.Length > 0)
+                    if (Attribute.IsDefined(type, typeof(KernelFunctionAttribute)))
                     {
-                        foundKernelFunction = true;
-                        Log.Information($"Found KernelFunction: {method.Name} in {type.FullName}");
+                        KernelFunctionAttribute? attributes = (KernelFunctionAttribute?)Attribute.GetCustomAttribute(type, typeof(KernelFunctionAttribute), false);
+                        if (attributes != null)
+                        {
+                            foundKernelFunction = true;
+                            Log.Information($"Found KernelFunction: {method.Name} in {type.FullName}");
+                        }
                     }
                 }
                 if (!foundKernelFunction)
