@@ -3,25 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35209.166
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PardofelisCore", "PardofelisCore\PardofelisCore.csproj", "{E5862DB9-1F0B-499D-9B6A-8C49917DDDDF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PardofelisCore", "PardofelisCore\PardofelisCore.csproj", "{E5862DB9-1F0B-499D-9B6A-8C49917DDDDF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PardofelisRunner", "PardofelisRunner\PardofelisRunner.csproj", "{3FC3B30D-BBB3-43D4-9499-89AC06BBCD2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PardofelisRunner", "PardofelisRunner\PardofelisRunner.csproj", "{3FC3B30D-BBB3-43D4-9499-89AC06BBCD2D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionCall", "Test\FunctionCall\FunctionCall.csproj", "{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionCall", "Test\FunctionCall\FunctionCall.csproj", "{9A5D0295-BEF0-4D04-961A-0BEE1130C27F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionCallStream", "Test\FunctionCallStream\FunctionCallStream.csproj", "{17D659C8-17BA-4A99-8540-4921863DD30A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionCallStream", "Test\FunctionCallStream\FunctionCallStream.csproj", "{17D659C8-17BA-4A99-8540-4921863DD30A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple", "Test\Simple\Simple.csproj", "{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Simple", "Test\Simple\Simple.csproj", "{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlamaSharpChatWebUI", "LlamaSharpChatWebUI\LlamaSharpChatWebUI.csproj", "{271F7532-8DE1-4C85-9682-A19C62B944B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LlamaSharpChatWebUI", "LlamaSharpChatWebUI\LlamaSharpChatWebUI.csproj", "{271F7532-8DE1-4C85-9682-A19C62B944B4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FunctionCallPlugin", "FunctionCallPlugin", "{74420E6F-D8FC-4DE4-9B65-241B73A1277C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailPlugin", "FunctionCallPlugin\EmailPlugin\EmailPlugin.csproj", "{24CDEA96-C7DB-4D50-A346-F628FE804C84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmailPlugin", "FunctionCallPlugin\EmailPlugin\EmailPlugin.csproj", "{24CDEA96-C7DB-4D50-A346-F628FE804C84}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PardofelisUI", "PardofelisUI\PardofelisUI.csproj", "{424011A9-61B7-46BE-AD70-8B5916434745}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PardofelisUI", "PardofelisUI\PardofelisUI.csproj", "{424011A9-61B7-46BE-AD70-8B5916434745}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WeatherFifteenDaysPlugin", "FunctionCallPlugin\WeatherFifteenDaysPlugin\WeatherFifteenDaysPlugin.csproj", "{438C0315-F977-4FE0-AD6F-D6A46DAC6783}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WeatherOneDayPlugin", "FunctionCallPlugin\WeatherOneDayPlugin\WeatherOneDayPlugin.csproj", "{E54E98EA-2C15-444D-B5E9-D82F44152355}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +65,14 @@ Global
 		{424011A9-61B7-46BE-AD70-8B5916434745}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{424011A9-61B7-46BE-AD70-8B5916434745}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{424011A9-61B7-46BE-AD70-8B5916434745}.Release|Any CPU.Build.0 = Release|Any CPU
+		{438C0315-F977-4FE0-AD6F-D6A46DAC6783}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{438C0315-F977-4FE0-AD6F-D6A46DAC6783}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{438C0315-F977-4FE0-AD6F-D6A46DAC6783}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{438C0315-F977-4FE0-AD6F-D6A46DAC6783}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E54E98EA-2C15-444D-B5E9-D82F44152355}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E54E98EA-2C15-444D-B5E9-D82F44152355}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E54E98EA-2C15-444D-B5E9-D82F44152355}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E54E98EA-2C15-444D-B5E9-D82F44152355}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -70,6 +82,8 @@ Global
 		{17D659C8-17BA-4A99-8540-4921863DD30A} = {90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}
 		{A63EDEE4-F943-4B7B-AF37-EE9CB63BD4ED} = {90A3ED5A-015B-4FD5-8E9C-A094CFCF1D08}
 		{24CDEA96-C7DB-4D50-A346-F628FE804C84} = {74420E6F-D8FC-4DE4-9B65-241B73A1277C}
+		{438C0315-F977-4FE0-AD6F-D6A46DAC6783} = {74420E6F-D8FC-4DE4-9B65-241B73A1277C}
+		{E54E98EA-2C15-444D-B5E9-D82F44152355} = {74420E6F-D8FC-4DE4-9B65-241B73A1277C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DF119E99-C6C6-4E86-8751-AE20DF3E7F2D}
