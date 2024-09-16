@@ -813,7 +813,8 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 4;
             var builder = Kernel.CreateBuilder();
-            builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
+            builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole().AddProvider(new FileLoggerProvider(Path.Join(CommonConfig.LogRootPath, "SemanticKernel.txt"))));
+
 
             // 加载FunctionCall插件
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
