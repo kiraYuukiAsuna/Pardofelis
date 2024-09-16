@@ -9,6 +9,10 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 
+public class Config
+{
+    public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+}
 
 public class WeatherOneDayPlugin
 {
