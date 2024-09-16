@@ -14,6 +14,10 @@ using HtmlAgilityPack;
 using System.Xml;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+public class Config
+{
+    public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+}
 public class WeatherOneDayPlugin
 {
     [KernelFunction]

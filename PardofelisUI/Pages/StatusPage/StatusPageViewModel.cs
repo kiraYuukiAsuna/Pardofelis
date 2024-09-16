@@ -830,6 +830,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                     }
                 }
             }
+            FunctionCallPluginLoader.SetConfig();
 
 
             // 连接大语言模型

@@ -4,6 +4,11 @@ using MimeKit;
 
 namespace EmailPlugin;
 
+public class Config
+{
+    public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+}
+
 public class EmailPlugin
 {
     [KernelFunction]

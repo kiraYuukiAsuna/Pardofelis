@@ -64,6 +64,7 @@ foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallP
         }
     }
 }
+FunctionCallPluginLoader.SetConfig();
 
 
 // 连接大语言模型
