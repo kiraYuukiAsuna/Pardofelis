@@ -74,7 +74,7 @@ public class WeatherOneDayPlugin
 
         var htmlDocument = new HtmlDocument();
         htmlDocument.LoadHtml(html);
-        string result =
+        string result = "";
 
         for (int i = 1; i <= 22; i++)
         {
@@ -101,14 +101,13 @@ public class WeatherOneDayPlugin
                 string today = todayNode?.InnerText.Trim() ?? "建议2信息未找到";
                 string weather = weatherNode?.InnerText.Trim() ?? "建议2信息未找到";
                 string temperature = temperatureNode?.InnerText.Trim() ?? "建议2信息未找到";
-                
+                result =result+"\n"+"日期:"+date+"天气:" +weather+"温度: "+temperature;
             }
             else
             {
                 Console.WriteLine($"未找到li[{i}]元素。");
             }
         }
-        result = $"日期: {date}, 天气: {today}, 温度: {weather}" ;
         return result;
     }
 }
