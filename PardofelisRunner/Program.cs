@@ -10,7 +10,6 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.Connectors.Sqlite;
 using Microsoft.SemanticKernel.Memory;
-using Serilog;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -48,7 +47,7 @@ thread.Start();
 
 //
 var builder = Kernel.CreateBuilder();
-builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole());
+builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole().AddProvider(new FileLoggerProvider(Path.Join(CommonConfig.LogRootPath, "SemanticKernel.txt"))));
 
 
 // 加载FunctionCall插件

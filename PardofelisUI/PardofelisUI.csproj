@@ -67,11 +67,8 @@
       <DependentUpon>StatusPage.axaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Remove="ControlsLibrary\**" />
     <Compile Remove="Styles\**" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="ControlsLibrary\" />
   </ItemGroup>
   
   <ItemGroup>
@@ -79,18 +76,22 @@
   </ItemGroup>
   
   <ItemGroup>
+    <AvaloniaXaml Remove="ControlsLibrary\**" />
     <AvaloniaXaml Remove="Styles\**" />
   </ItemGroup>
   
   <ItemGroup>
+    <AdditionalFiles Remove="ControlsLibrary\**" />
     <AdditionalFiles Remove="Styles\**" />
   </ItemGroup>
   
   <ItemGroup>
+    <EmbeddedResource Remove="ControlsLibrary\**" />
     <EmbeddedResource Remove="Styles\**" />
   </ItemGroup>
   
   <ItemGroup>
+    <None Remove="ControlsLibrary\**" />
     <None Remove="Styles\**" />
   </ItemGroup>
   
