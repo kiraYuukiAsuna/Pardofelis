@@ -494,7 +494,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         {
             ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
             ChatSystemPrompt = systemPrompt,
-            Temperature = m_CurrentModelParameter.OnlineLlmCreateInfo.Temperature,
+            Temperature = 0.0f,
         };
 
         Log.Information("\n" + text);
