@@ -3,9 +3,10 @@
              xmlns:sukiUi="clr-namespace:SukiUI;assembly=SukiUI" 
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:namespace="clr-namespace:PardofelisUI"
+			 xmlns:anotherNamespace="clr-namespace:PardofelisUI.Utilities"
              x:Class="PardofelisUI.App">
     <Application.DataTemplates>
-        <namespace:ViewLocator />
+		<anotherNamespace:ViewLocator />
     </Application.DataTemplates>
     
     <Application.Styles>

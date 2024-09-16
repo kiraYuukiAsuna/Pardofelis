@@ -20,55 +20,15 @@ using PardofelisUI.Pages.HomePage;
 using PardofelisUI.Pages.LlmConfig;
 using PardofelisUI.Pages.StatusPage;
 using PardofelisUI.Pages.VoiceInputConfig;
+using PardofelisUI.Utilities;
 using SukiUI;
 using SukiUI.Controls;
+using SukiUI.Dialogs;
 using SukiUI.Models;
 using BertVits2ConfigPageViewModel = PardofelisUI.Pages.VoiceOutputConfig.VoiceOutputConfigPageViewModel;
 using CharacterPresetConfigPageViewModel = PardofelisUI.Pages.CharacterPresetPage.CharacterPresetConfigPageViewModel;
 
 namespace PardofelisUI;
-
-public class ViewLocator : IDataTemplate
-{
-    private readonly Dictionary<object, Control> _controlCache = new();
-
-    public Control Build(object? data)
-    {
-        var fullName = data?.GetType().FullName;
-        if (fullName is null)
-        {
-            return new TextBlock { Text = "Data is null or has no name." };
-        }
-
-        var name = fullName.Replace("ViewModel", "");
-        var type = Type.GetType(name);
-        if (type is null)
-        {
-            return new TextBlock { Text = $"No View For {name}." };
-        }
-
-        if (!_controlCache.TryGetValue(data!, out var res))
-        {
-            res ??= (Control)Activator.CreateInstance(type)!;
-            _controlCache[data!] = res;
-        }
-
-        res.DataContext = data;
-        return res;
-    }
-
-    public bool Match(object? data) => data is INotifyPropertyChanged;
-}
-
-public class PageNavigationService
-{
-    public Action<Type>? NavigationRequested { get; set; }
-
-    public void RequestNavigation<T>() where T : PageBase
-    {
-        NavigationRequested?.Invoke(typeof(T));
-    }
-}
 
 public partial class MainWindowViewModel : PageBase
 {
@@ -105,16 +65,22 @@ public partial class MainWindowViewModel : PageBase
         _theme.OnBaseThemeChanged += variant =>
         {
             BaseTheme = variant;
-            SukiHost.ShowToast("Successfully Changed Theme", $"Changed Theme To {variant}");
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent($"Successfully Changed Theme: Changed Theme To {variant}")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         };
 
         // Subscribe to the color theme changed events
         _theme.OnColorThemeChanged += theme =>
-            SukiHost.ShowToast("Successfully Changed Color", $"Changed Color To {theme.DisplayName}.");
-
-        // Subscribe to the background animation changed events
-        _theme.OnBackgroundAnimationChanged +=
-            value => AnimationsEnabled = value;
+        {
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent($"Successfully Changed Color: Changed Color To {theme.DisplayName}.")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
+        };
     }
 
     public static void OpenUrlInternal(string url)
@@ -147,12 +113,17 @@ public partial class MainWindowViewModel : PageBase
     private Task ToggleAnimations()
     {
         AnimationsEnabled = !AnimationsEnabled;
-        _theme.SetBackgroundAnimationsEnabled(AnimationsEnabled);
         var title = AnimationsEnabled ? "Animation Enabled" : "Animation Disabled";
         var content = AnimationsEnabled
             ? "Background animations are now enabled."
             : "Background animations are now disabled.";
-        return SukiHost.ShowToast(title, content);
+
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithTitle(title)
+            .WithContent(content)
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
@@ -163,6 +134,9 @@ public partial class MainWindowViewModel : PageBase
         _theme.ChangeColorTheme(theme);
 
     [RelayCommand]
-    private void CreateCustomTheme() =>
-        SukiHost.ShowDialog(new CustomThemeDialogViewModel(_theme), allowBackgroundClose: true);
+    private void CreateCustomTheme()
+    {
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithViewModel(dialog => new CustomThemeDialogViewModel(_theme)).Dismiss().ByClickingBackground().TryShow();
+    }
 }

@@ -12,10 +12,8 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
-using PardofelisUI.ControlsLibrary.Dialog;
 using Newtonsoft.Json;
 using Serilog;
-using SukiUI.Controls;
 using Path = System.IO.Path;
 using PardofelisCore.Config;
 using PardofelisCore;
@@ -30,15 +28,13 @@ using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Gradio.Net;
 using File = System.IO.File;
 using PardofelisCore.LlmController.OpenAiModel;
 using System.Text;
 using System.Collections.Concurrent;
-using Avalonia.Input;
-using Avalonia.Controls;
 using System.Windows.Input;
 using ReactiveUI;
+using SukiUI.Dialogs;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -59,7 +55,7 @@ public partial class StatusPageViewModel : PageBase
 
         InfoBarTitle = "当前状态：";
         InfoBarMessage = "未启动...";
-        InfoBarSeverity = SukiUI.Enums.NotificationType.Info;
+        InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Information;
         StatusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
 
         HandleEnterKeyCommand = ReactiveCommand.Create<string>(HandleEnterKey);
@@ -111,7 +107,12 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("加载配置文件失败！没有选择有效的大语言模型配置文件!", "确定"));
+
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("加载配置文件失败！没有选择有效的大语言模型配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -136,7 +137,12 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("加载配置文件失败！没有选择有效的人物设定配置文件!", "确定"));
+
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("加载配置文件失败！没有选择有效的人物设定配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -181,7 +187,12 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("更新配置文件失败!", "确定"));
+
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("更新配置文件失败!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -207,7 +218,12 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("更新配置文件失败!", "确定"));
+
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("更新配置文件失败!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -233,7 +249,12 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("更新配置文件失败!", "确定"));
+
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("更新配置文件失败!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -599,7 +620,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
             InfoBarTitle = "当前状态：";
             InfoBarMessage = "未启动...";
-            InfoBarSeverity = SukiUI.Enums.NotificationType.Info;
+            InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Information;
             UpdateStatusColor(Color.FromRgb(33, 71, 192));
 
             StepperIndex = 0;
@@ -613,13 +634,21 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
         if (SelectedModelParameterConfig == "")
         {
-            SukiHost.ShowDialog(new StandardDialog("没有选择有效的大语言模型配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("没有选择有效的大语言模型配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         if (SelectedModelParameterConfig == "")
         {
-            SukiHost.ShowDialog(new StandardDialog("没有选择有效的人物设定配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("没有选择有效的人物设定配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
@@ -635,7 +664,11 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("加载配置文件失败！没有选择有效的大语言模型配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("加载配置文件失败！没有选择有效的大语言模型配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
@@ -648,7 +681,11 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         {
             Log.Error(e.Message);
 
-            SukiHost.ShowDialog(new StandardDialog("加载配置文件失败！没有选择有效的人物设定配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent("加载配置文件失败！没有选择有效的人物设定配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
@@ -691,7 +728,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             (m_CurrentModelParameter.ModelType == ModelType.Local
                                  ? "(本地大模型)"
                                  : "(在线大模型)");
-            InfoBarSeverity = SukiUI.Enums.NotificationType.Success;
+            InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Success;
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 0;
 
@@ -1056,7 +1093,12 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         else
         {
             // 如果已经在UI线程上，直接执行
-            SukiHost.ShowDialog(new StandardDialog(message, buttonText));
+
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent(message)
+                .WithActionButton(buttonText, _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -1077,7 +1119,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
     [ObservableProperty] private string _infoBarTitle;
     [ObservableProperty] private string _infoBarMessage;
-    [ObservableProperty] private SukiUI.Enums.NotificationType _infoBarSeverity;
+    [ObservableProperty] private Avalonia.Controls.Notifications.NotificationType _infoBarSeverity;
     [ObservableProperty] private string _runButtonText;
     [ObservableProperty] private string _historyTextBlock;
     [ObservableProperty] private string _inputTextBox;
@@ -1104,12 +1146,20 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             }
             else
             {
-                SukiHost.ShowDialog(new StandardDialog("配置文件中检测到未知的输入方式，请检查并修改配置文件后重新运行!", "确定"));
+                DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                    .WithTitle("提示！")
+                    .WithContent("配置文件中检测到未知的输入方式，请检查并修改配置文件后重新运行!")
+                    .WithActionButton("确定", _ => { }, true)
+                    .TryShow();
             }
         }
         else
         {
-            SukiHost.ShowDialog(new StandardDialog("当前服务未启动或初始化失败，请检查服务状态后重试!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("当前服务未启动或初始化失败，请检查服务状态后重试!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 
@@ -1171,7 +1221,11 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         catch (Exception e)
         {
             Log.Error(e.Message);
-            SukiHost.ShowDialog(new StandardDialog("清空聊天记录失败! 错误信息：" + e.Message, "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("清空聊天记录失败! 错误信息：" + e.Message)
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
     }
 

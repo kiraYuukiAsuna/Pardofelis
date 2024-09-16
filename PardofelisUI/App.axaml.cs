@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using PardofelisUI.CustomTheme;
+using PardofelisUI.Utilities;
 
 namespace PardofelisUI;
 

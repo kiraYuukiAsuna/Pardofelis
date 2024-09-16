@@ -9,8 +9,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 using PardofelisCore.Config;
-using PardofelisUI.ControlsLibrary.Dialog;
-using SukiUI.Controls;
+using SukiUI.Dialogs;
+
 
 namespace PardofelisUI.Pages.LlmConfig;
 
@@ -114,20 +114,32 @@ public partial class LlmConfigPageViewModel : PageBase
     {
         if (NewConfigFileName.Length == 0)
         {
-            SukiHost.ShowDialog(new StandardDialog("请输入新配置文件名称!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("请输入新配置文件名称!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         var configPath = m_ModelConfigRootPath + "/" + NewConfigFileName + ".json";
         if (File.Exists(configPath))
         {
-            SukiHost.ShowDialog(new StandardDialog("同名文件已存在!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("同名文件已存在!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         var config = new ModelParameterConfig();
         ModelParameterConfig.WriteConfig(configPath, config);
-        SukiHost.ShowDialog(new StandardDialog("创建新配置文件成功!", "确定"));
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithTitle("提示！")
+            .WithContent("创建新配置文件成功!")
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
         RescanConfig();
         ReloadConfig(configPath);
     }
@@ -138,25 +150,41 @@ public partial class LlmConfigPageViewModel : PageBase
     {
         if (SelectedModelParameterConfig == null || SelectedModelParameterConfig.Length == 0)
         {
-            SukiHost.ShowDialog(new StandardDialog("请选择配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("请选择配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         var configPath = m_ModelConfigRootPath + "/" + SelectedModelParameterConfig;
         if (!File.Exists(configPath))
         {
-            SukiHost.ShowDialog(new StandardDialog("删除成功!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("删除成功!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         try
         {
             File.Delete(configPath);
-            SukiHost.ShowDialog(new StandardDialog("删除成功!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("删除成功!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
         catch (Exception e)
         {
-            SukiHost.ShowDialog(new StandardDialog("删除失败! 错误信息：" + e.Message, "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("删除失败! 错误信息：" + e.Message)
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
         }
 
         RescanConfig();
@@ -190,12 +218,20 @@ public partial class LlmConfigPageViewModel : PageBase
 
         if (File.Exists(m_ModelConfigRootPath + "/" + files[0].Name))
         {
-            SukiHost.ShowDialog(new StandardDialog("同名配置文件已经存在，导入失败!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("同名配置文件已经存在，导入失败!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         File.Copy(files[0].Path.LocalPath, m_ModelConfigRootPath + "/" + files[0].Name, true);
-        SukiHost.ShowDialog(new StandardDialog("导入配置文件： " + files[0].Path.LocalPath + " 成功!", "确定"));
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithTitle("提示！")
+            .WithContent("导入配置文件： " + files[0].Path.LocalPath + " 成功!")
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
         RescanConfig();
     }
 
@@ -204,14 +240,22 @@ public partial class LlmConfigPageViewModel : PageBase
     {
         if (SelectedModelParameterConfig.Length == 0)
         {
-            SukiHost.ShowDialog(new StandardDialog("请选择要导出的配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("请选择要导出的配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
         var configPath = m_ModelConfigRootPath + "/" + SelectedModelParameterConfig;
         if (!File.Exists(configPath))
         {
-            SukiHost.ShowDialog(new StandardDialog("选中的配置文件不存在!导出失败！", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("选中的配置文件不存在!导出失败！")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
@@ -233,8 +277,11 @@ public partial class LlmConfigPageViewModel : PageBase
 
         File.Copy(m_ModelConfigRootPath + "/" + SelectedModelParameterConfig,
             folders[0].Path.LocalPath + "/" + Path.GetFileName(SelectedModelParameterConfig), true);
-        SukiHost.ShowDialog(new StandardDialog(
-            "导入配置文件： " + SelectedModelParameterConfig + " 到目录 " + folders[0].Path.LocalPath + " 成功!", "确定"));
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithTitle("提示！")
+            .WithContent("导入配置文件： " + SelectedModelParameterConfig + " 到目录 " + folders[0].Path.LocalPath + " 成功!")
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
     }
 
     [RelayCommand]
@@ -242,7 +289,11 @@ public partial class LlmConfigPageViewModel : PageBase
     {
         if (string.IsNullOrEmpty(SelectedModelParameterConfig))
         {
-            SukiHost.ShowDialog(new StandardDialog("请选择配置文件!", "确定"));
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("请选择配置文件!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
             return;
         }
 
@@ -262,6 +313,10 @@ public partial class LlmConfigPageViewModel : PageBase
                 OnlineModelApiKey)
         };
         ModelParameterConfig.WriteConfig(configPath, config);
-        SukiHost.ShowDialog(new StandardDialog("保存配置文件成功!", "确定"));
+        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+            .WithTitle("提示！")
+            .WithContent("保存配置文件成功!")
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
     }
 }

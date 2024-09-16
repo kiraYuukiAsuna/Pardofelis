@@ -22,7 +22,8 @@ public partial class CustomThemeDialogViewModel : ObservableObject
         var theme1 = new SukiColorTheme(DisplayName, PrimaryColor, AccentColor);
         m_Theme.AddColorTheme(theme1);
         m_Theme.ChangeColorTheme(theme1);
-        SukiHost.CloseDialog();
+        
+        
     }
 
     private SukiTheme m_Theme;
