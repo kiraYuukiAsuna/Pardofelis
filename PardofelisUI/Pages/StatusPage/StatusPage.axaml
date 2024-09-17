@@ -128,7 +128,7 @@
                             <TextBox Text="{Binding InputTextBox}" Width="600"
                                      VerticalAlignment="Top" HorizontalAlignment="Left"
                                      TextWrapping="Wrap"
-									 KeyDown ="InputTextBox_KeyDown" />
+									 KeyDown ="InputTextBox_PreviewKeyDown" />
                             <Button Margin="15,0,0,0"
                                     VerticalAlignment="Top" HorizontalAlignment="Right"
                                     Command="{Binding InferCommand}"

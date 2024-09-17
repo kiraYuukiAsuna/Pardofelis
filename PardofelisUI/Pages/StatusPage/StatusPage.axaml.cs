@@ -13,9 +13,10 @@ public partial class StatusPage : UserControl
         InitializeComponent();
     }
 
-    private void InputTextBox_KeyDown(object sender, KeyEventArgs e)
+    private void InputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && (e.KeyModifiers == KeyModifiers.Control))
+        
+        if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             var textBox = sender as TextBox;
             if (textBox != null)
@@ -25,7 +26,16 @@ public partial class StatusPage : UserControl
                 if (viewModel != null)
                 {
                     viewModel.HandleEnterKeyCommand.Execute(text);
+                    e.Handled = true; // 阻止事件继续传播
                 }
+            }
+        }else if(e.Key == Key.Enter)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null)
+            {
+                textBox.Text += "\n";
+                textBox.CaretIndex = textBox.Text.Length;
             }
         }
     }
