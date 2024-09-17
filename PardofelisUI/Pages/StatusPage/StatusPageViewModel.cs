@@ -1124,6 +1124,10 @@ public partial class StatusPageViewModel : PageBase
                     WorkingDirectory = Path.Join(CommonConfig.PluginRootPath, pluginName)
                 };
 
+                // Add the environment variable
+                processStartInfo.EnvironmentVariables["QT_QPA_PLATFORM_PLUGIN_PATH"] =
+                     Path.Join(CommonConfig.PythonRootPath, "Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms");
+
                 var process = new Process { StartInfo = processStartInfo };
 
                 if (!process.Start())
@@ -1132,6 +1136,7 @@ public partial class StatusPageViewModel : PageBase
                     ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定");
                 }
             }
+
 
 
             // 启动成功
