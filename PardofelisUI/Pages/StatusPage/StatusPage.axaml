@@ -122,8 +122,8 @@
                                 Content="清空历史记忆" />
                         <TextBox Width="700" Height="600"
                                  TextWrapping="Wrap"
-                                 CaretIndex="{Binding CaretIndex}"
-                                 Text="{Binding HistoryTextBlock}" />
+                                 Text="{Binding HistoryTextBlock}" 
+                                 TextChanged="TextBox_OnTextChanged"/>
                         <StackPanel Orientation="Horizontal">
                             <TextBox Text="{Binding InputTextBox}" Width="600"
                                      VerticalAlignment="Top" HorizontalAlignment="Left"

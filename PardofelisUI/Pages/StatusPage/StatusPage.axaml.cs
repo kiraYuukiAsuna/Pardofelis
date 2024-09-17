@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
@@ -26,6 +27,15 @@ public partial class StatusPage : UserControl
                     viewModel.HandleEnterKeyCommand.Execute(text);
                 }
             }
+        }
+    }
+
+    private void TextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        var textBox = sender as TextBox;
+        if (textBox != null)
+        {
+            textBox.CaretIndex = textBox.Text.Length;
         }
     }
 }

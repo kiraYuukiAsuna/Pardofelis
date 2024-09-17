@@ -76,10 +76,7 @@ public partial class StatusPageViewModel : PageBase
     [ObservableProperty] AvaloniaList<string> _modelParameterConfigList = [];
     [ObservableProperty] private string _selectedModelParameterConfig;
     [ObservableProperty] private string _selectedCharacterPresetConfig;
-
-    [ObservableProperty] private int _caretIndex = Int32.MaxValue;
-
-
+    
     [ObservableProperty] private SolidColorBrush _statusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
 
     public ICommand HandleEnterKeyCommand { get; }
@@ -601,7 +598,7 @@ public partial class StatusPageViewModel : PageBase
             : "<(未知)>:";
         HistoryTextBlock += "\n" + assistantMessage + "\n\n";
 
-        CaretIndex = Int32.MaxValue;
+        Thread.Sleep(TimeSpan.FromSeconds(1));
 
         var chatContentAfter = ChatMessagesToChatMessage();
         File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"),
@@ -1096,8 +1093,6 @@ public partial class StatusPageViewModel : PageBase
                         }
                     }
                 }
-
-                CaretIndex = Int32.MaxValue;
             }
             catch (Exception e)
             {
@@ -1138,7 +1133,6 @@ public partial class StatusPageViewModel : PageBase
                 }
                 pluginInstances.Add(process);
             }
-
 
 
             // 启动成功
@@ -1286,8 +1280,6 @@ public partial class StatusPageViewModel : PageBase
                     }
                 }
             }
-
-            CaretIndex = Int32.MaxValue;
         }
         catch (Exception e)
         {
