@@ -13,6 +13,7 @@ using PardofelisCore.LlmController.LlamaSharpWrapper.FunctionCall;
 using PardofelisCore.LlmController.LlamaSharpWrapper.Transform;
 using PardofelisCore.LlmController.OpenAiModel;
 using Serilog;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace PardofelisCore.LlmController.LlamaSharpWrapper.Service;
 
@@ -104,7 +105,9 @@ public class LlmModelService : ILlmModelService
             
         };*/
         //var embeddingParams = LlmModelParams.ToModelParams(LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams);
-        var embeddingParams = new ModelParams(Path.Join(CommonConfig.EmbeddingModelRootPath, LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams.ModelFileName));
+
+        var embeddingModelFilePath = Path.Join(CommonConfig.EmbeddingModelRootPath, LlmModelConfigList.ReadConfig().EmbeddingModelConfig.LlmModelParams.ModelFileName);
+        var embeddingParams = new ModelParams(embeddingModelFilePath);
         embeddingParams.PoolingType = LLamaPoolingType.Mean;
         embeddingParams.Encoding = Encoding.UTF8;
         _embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);

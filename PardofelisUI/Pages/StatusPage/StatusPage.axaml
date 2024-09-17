@@ -121,7 +121,6 @@
                                 Command="{Binding ClearHistoryCommand}"
                                 Content="清空历史记忆" />
                         <TextBox Width="700" Height="600"
-                                 AcceptsReturn="True"
                                  TextWrapping="Wrap"
                                  CaretIndex="{Binding CaretIndex}"
                                  Text="{Binding HistoryTextBlock}" />

@@ -18,7 +18,7 @@ class Program
     {
         try
         {
-            BuildAvaloniaApp()
+            BuildAvaloniaApp().UseSkia()
                 .StartWithClassicDesktopLifetime(args);
         }
         catch (Exception e)

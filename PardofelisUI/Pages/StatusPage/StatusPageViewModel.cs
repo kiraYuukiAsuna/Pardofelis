@@ -1129,12 +1129,14 @@ public partial class StatusPageViewModel : PageBase
                      Path.Join(CommonConfig.PythonRootPath, "Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms");
 
                 var process = new Process { StartInfo = processStartInfo };
-
+                
                 if (!process.Start())
                 {
                     Log.Error("Failed to start plugin: " + pluginName);
                     ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定");
+                    continue;
                 }
+                pluginInstances.Add(process);
             }
 
 
