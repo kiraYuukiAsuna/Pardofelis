@@ -17,6 +17,26 @@ using Microsoft.SemanticKernel.Memory;
 #pragma warning disable SKEXP0001
 
 
+AppDataDirectoryChecker.InitPardofelisAppSettings();
+if (Directory.Exists(CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath))
+{
+    Console.WriteLine($"PardofelisAppDataPrefixPath [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}] exists.");
+}
+else
+{
+    Console.WriteLine($"PardofelisAppDataPrefixPath [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}] not exists.");
+    return -1;
+}
+var res = AppDataDirectoryChecker.CheckAppDataDirectoryAndCreateNoExist();
+if(res.Status == false)
+{
+    Console.WriteLine(res.Message);
+    Console.WriteLine($"Failed to find correct PardofelisAppData path. CurrentPath: [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}]. Please set it to the correct path!");
+    return -1;
+    // AppDataDirectoryChecker.SetCurrentPardofelisAppDataPrefixPath("D:\\Dev");
+}
+
+
 // CancellationTokenSource
 CancellationTokenSource cancellationToken = new CancellationTokenSource();
 
@@ -202,7 +222,7 @@ while (true)
 
     if (VoiceOutputController == null || kernel == null)
     {
-        return;
+        return -1;
     }
 
     chatMessages.AddUserMessage(messageUser);

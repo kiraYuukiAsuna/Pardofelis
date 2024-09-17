@@ -1,12 +1,16 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
 using MimeKit;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace EmailPlugin;
 
-public class Config
+public class Config : ObservableObject
 {
     public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+
+
+
 }
 
 public class EmailPlugin

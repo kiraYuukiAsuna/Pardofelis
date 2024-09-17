@@ -10,17 +10,25 @@
     
     <controls:GlassCard Margin="40"
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
+                        VerticalAlignment="Center" Width="800">
         <controls:GroupBox Header="主页.">
             <StackPanel>
-                <Image Width="135"
-                       Height="135"
-                       Margin="30"
-                       HorizontalAlignment="Center"
-                       Source="/Assets/AppImage.png" />
-                <TextBlock Name="TextBlockWithInline">
-                    还没写 ：)
-                </TextBlock>
+                <ToolTip>设置 PardofelisAppData 所在路径</ToolTip>
+                <Panel>
+                    <TextBlock Margin="0,0,0,0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               FontWeight="Bold"
+                               Text="PardofelisAppData 所在路径：" />
+
+                    <TextBox VerticalAlignment="Top" HorizontalAlignment="Center"
+                             Width="200"
+                             Text="{Binding PardofelisAppDataPrefixPath}" />
+
+                    <Button Margin="15,0,0,0"
+                            VerticalAlignment="Top" HorizontalAlignment="Right"
+                            Command="{Binding UpdatePathCommand}"
+                            Content="更新路径信息" />
+                </Panel>
             </StackPanel>
         </controls:GroupBox>
     </controls:GlassCard>

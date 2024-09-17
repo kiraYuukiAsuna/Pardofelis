@@ -49,6 +49,8 @@ public partial class LlmConfigPageViewModel : PageBase
 
     private void ReloadConfig(string configPath)
     {
+        m_ModelConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "ModelConfig");
+        
         if (configPath.Length == 0)
         {
             return;
@@ -83,6 +85,8 @@ public partial class LlmConfigPageViewModel : PageBase
     [RelayCommand]
     private void RescanConfig()
     {
+        m_ModelConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "ModelConfig");
+
         SelectedModelParameterConfig = "";
         ModelParameterConfigList.Clear();
 

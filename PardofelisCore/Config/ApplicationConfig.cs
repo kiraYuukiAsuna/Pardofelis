@@ -22,6 +22,8 @@ public enum TextInputMode
 
 public struct ApplicationConfig
 {
+    public string PardofelisAppDataPrefixPath;
+
     public string LastSelectedModelConfigFileName;
     public string LastSelectedCharacterPresetConfigFileName;
 
@@ -32,6 +34,7 @@ public struct ApplicationConfig
 
     public ApplicationConfig()
     {
+        PardofelisAppDataPrefixPath = "";
         LastSelectedModelConfigFileName = "";
         LastSelectedCharacterPresetConfigFileName = "";
         LastSelectedModelType = ModelType.Online;
@@ -39,9 +42,10 @@ public struct ApplicationConfig
         LastSelectedModelFileName = "";
     }
 
-    public ApplicationConfig(string lastSelectedModelConfigFileName, string lastSelectedCharacterPresetConfigFileName,
+    public ApplicationConfig(string pardofelisAppDataPrefixPath, string lastSelectedModelConfigFileName, string lastSelectedCharacterPresetConfigFileName,
         ModelType modelType, TextInputMode textInputMode, string lastSelectedModelFileName)
     {
+        PardofelisAppDataPrefixPath = pardofelisAppDataPrefixPath;
         LastSelectedModelConfigFileName = lastSelectedModelConfigFileName;
         LastSelectedCharacterPresetConfigFileName = lastSelectedCharacterPresetConfigFileName;
         LastSelectedModelType = modelType;

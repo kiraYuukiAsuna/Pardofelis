@@ -2,16 +2,20 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using PardofelisCore.Config;
+using PardofelisCore.Util;
 using PardofelisUI.CustomTheme;
 using PardofelisUI.Pages;
 using PardofelisUI.Pages.About;
@@ -21,10 +25,12 @@ using PardofelisUI.Pages.LlmConfig;
 using PardofelisUI.Pages.StatusPage;
 using PardofelisUI.Pages.VoiceInputConfig;
 using PardofelisUI.Utilities;
+using Serilog;
 using SukiUI;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Models;
+using TextMateSharp.Themes;
 using BertVits2ConfigPageViewModel = PardofelisUI.Pages.VoiceOutputConfig.VoiceOutputConfigPageViewModel;
 using CharacterPresetConfigPageViewModel = PardofelisUI.Pages.CharacterPresetPage.CharacterPresetConfigPageViewModel;
 
@@ -35,7 +41,7 @@ public partial class MainWindowViewModel : PageBase
     [ObservableProperty]
     private DynamicUIConfig _dynamicUIConfig;
     public MainWindowViewModel() : base(DynamicUIConfig.AppName, MaterialIconKind.Home)
-    {
+    {        
         _theme = SukiTheme.GetInstance();
 
         Pages = new AvaloniaList<PageBase>
@@ -81,6 +87,7 @@ public partial class MainWindowViewModel : PageBase
                 .WithActionButton("确定", _ => { }, true)
                 .TryShow();
         };
+
     }
 
     public static void OpenUrlInternal(string url)

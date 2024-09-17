@@ -69,6 +69,8 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
 
     private void ReloadConfig(string configPath)
     {
+        m_ConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "CharacterPreset");
+        
         if (configPath.Length == 0)
         {
             return;
@@ -118,6 +120,8 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
     [RelayCommand]
     private void RescanConfig()
     {
+        m_ConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "CharacterPreset");
+        
         SelectedConfigFileName = "";
         ConfigFileNameList.Clear();
 

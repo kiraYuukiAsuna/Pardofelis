@@ -264,6 +264,15 @@ public partial class StatusPageViewModel : PageBase
     [RelayCommand]
     private void RescanConfig()
     {
+        m_ModelConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "ModelConfig");
+
+        m_CharactPresetConfigRootPath = Path.Join(CommonConfig.ConfigRootPath, "CharacterPreset");
+
+        m_LocalModelRootPath = CommonConfig.LocalLlmModelRootPath;
+
+        m_ApplicationConfigFilePath =
+            Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/ApplicationConfig.json");
+
         SelectedModelParameterConfig = "";
         SelectedCharacterPresetConfig = "";
         ModelParameterConfigList.Clear();
@@ -279,15 +288,6 @@ public partial class StatusPageViewModel : PageBase
         foreach (var fileName in characterConfigFileNames)
         {
             CharacterPresetConfigList.Add(fileName);
-        }
-
-        var modelFiles = Directory.GetFiles(m_LocalModelRootPath);
-        foreach (var modelFile in modelFiles)
-        {
-            if (Path.GetExtension(modelFile) == ".gguf")
-            {
-                LocalModelFileNames.Add(Path.GetFileName(modelFile));
-            }
         }
 
         var applicationConfig = ApplicationConfig.ReadConfig(m_ApplicationConfigFilePath);
@@ -330,22 +330,34 @@ public partial class StatusPageViewModel : PageBase
             }
         }
 
-        bool foundModelFile = false;
-        foreach (var fileName in modelFiles)
+        if (Directory.Exists(m_LocalModelRootPath))
         {
-            if (applicationConfig.LastSelectedModelFileName == fileName)
+            var modelFiles = Directory.GetFiles(m_LocalModelRootPath);
+            foreach (var modelFile in modelFiles)
             {
-                SelectedLocalModelFileName = fileName;
-                foundModelFile = true;
-                break;
+                if (Path.GetExtension(modelFile) == ".gguf")
+                {
+                    LocalModelFileNames.Add(Path.GetFileName(modelFile));
+                }
             }
-        }
 
-        if (!foundModelFile)
-        {
-            if (LocalModelFileNames.Count > 0)
+            bool foundModelFile = false;
+            foreach (var fileName in modelFiles)
             {
-                SelectedLocalModelFileName = LocalModelFileNames[0];
+                if (applicationConfig.LastSelectedModelFileName == fileName)
+                {
+                    SelectedLocalModelFileName = fileName;
+                    foundModelFile = true;
+                    break;
+                }
+            }
+
+            if (!foundModelFile)
+            {
+                if (LocalModelFileNames.Count > 0)
+                {
+                    SelectedLocalModelFileName = LocalModelFileNames[0];
+                }
             }
         }
     }
@@ -396,6 +408,7 @@ public partial class StatusPageViewModel : PageBase
     {
         await onLlmMessageInput(message);
     }
+
     public void QueueMessage(string text)
     {
         _messageQueue.Add(text);
@@ -409,45 +422,48 @@ public partial class StatusPageViewModel : PageBase
             switch (message.Role.Label)
             {
                 case "system":
+                {
+                    if (string.IsNullOrEmpty(message.Content))
                     {
-                        if(string.IsNullOrEmpty(message.Content))
-                        {
-                            break;
-                        }
-                        chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
-                        (
-                            Role.User,
-                            message.Content
-                        ));
                         break;
                     }
 
+                    chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
+                    (
+                        Role.User,
+                        message.Content
+                    ));
+                    break;
+                }
+
                 case "assistant":
+                {
+                    if (string.IsNullOrEmpty(message.Content))
                     {
-                        if (string.IsNullOrEmpty(message.Content))
-                        {
-                            break;
-                        }
-                        chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
-                        (
-                            Role.Assistant,
-                            message.Content
-                        ));
                         break;
                     }
+
+                    chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
+                    (
+                        Role.Assistant,
+                        message.Content
+                    ));
+                    break;
+                }
                 case "user":
+                {
+                    if (string.IsNullOrEmpty(message.Content))
                     {
-                        if (string.IsNullOrEmpty(message.Content))
-                        {
-                            break;
-                        }
-                        chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
-                        (
-                            Role.User,
-                            message.Content
-                        ));
                         break;
                     }
+
+                    chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
+                    (
+                        Role.User,
+                        message.Content
+                    ));
+                    break;
+                }
             }
         }
 
@@ -461,7 +477,8 @@ public partial class StatusPageViewModel : PageBase
             return;
         }
 
-        if (SemanticTextMemory == null || PythonInstance == null  || SemanticKernel == null || VoiceOutputController == null)
+        if (SemanticTextMemory == null || PythonInstance == null || SemanticKernel == null ||
+            VoiceOutputController == null)
         {
             return;
         }
@@ -479,16 +496,17 @@ public partial class StatusPageViewModel : PageBase
         }
 
         string systemPrompt =
-$"下面我们要进行角色扮演，你的名字叫{m_CurrentCharacterPreset.Name}，你的人物设定内容是：\n{m_CurrentCharacterPreset.PresetContent}\n你正在对话的人的名字是{m_CurrentCharacterPreset.YourName} ，现在是{DateTime.Now.ToString()}，你之后回复的有关时间的文本要符合常识，例如今天是9月15日，那么9月14日就要用昨天代替.\n" +
-$"当前使用向量搜索获取到的你的历史相关记忆信息如下，格式是类似于 2024/9/8 3:31:35 说话人（爱莉），对话人：（希儿）：早上好啊！ 的格式，括号里的内容是名字，你需要根据你所知道的内容去判断是谁说的话，在后续回复中你只需要回复你想说的话，不用带上（{m_CurrentCharacterPreset.Name}）等类似的表明说话人的信息，"+
-$"当然如果人物设定中出现了让你将人物心情用括号括起来的要求你可以去遵守，注意所有的回复不要带表情：\n";
+            $"下面我们要进行角色扮演，你的名字叫{m_CurrentCharacterPreset.Name}，你的人物设定内容是：\n{m_CurrentCharacterPreset.PresetContent}\n你正在对话的人的名字是{m_CurrentCharacterPreset.YourName} ，现在是{DateTime.Now.ToString()}，你之后回复的有关时间的文本要符合常识，例如今天是9月15日，那么9月14日就要用昨天代替.\n" +
+            $"当前使用向量搜索获取到的你的历史相关记忆信息如下，格式是类似于 2024/9/8 3:31:35 说话人（爱莉），对话人：（希儿）：早上好啊！ 的格式，括号里的内容是名字，你需要根据你所知道的内容去判断是谁说的话，在后续回复中你只需要回复你想说的话，不用带上（{m_CurrentCharacterPreset.Name}）等类似的表明说话人的信息，" +
+            $"当然如果人物设定中出现了让你将人物心情用括号括起来的要求你可以去遵守，注意所有的回复不要带表情：\n";
 
         foreach (var message in vectorSearch)
         {
             systemPrompt += message;
         }
 
-        systemPrompt += "\n根据上述信息进行角色扮演，并在适当的时候调用工具，当没有显式说出调用工具的名称时不要去调用工具，调用工具的参数不能凭空捏造，在工具调用信息缺失时你会继续提问直到满足调用该工具的参数要求为止。";
+        systemPrompt +=
+            "\n根据上述信息进行角色扮演，并在适当的时候调用工具，当没有显式说出调用工具的名称时不要去调用工具，调用工具的参数不能凭空捏造，在工具调用信息缺失时你会继续提问直到满足调用该工具的参数要求为止。";
 
         OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
         {
@@ -501,7 +519,8 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         ChatMessages.AddUserMessage(text);
 
         var chatContentBefore = ChatMessagesToChatMessage();
-        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentBefore, Formatting.Indented));
+        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"),
+            JsonConvert.SerializeObject(chatContentBefore, Formatting.Indented));
 
         IChatCompletionService chatCompletionService = SemanticKernel.GetRequiredService<IChatCompletionService>();
 
@@ -509,9 +528,9 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         try
         {
             result = chatCompletionService.GetChatMessageContentsAsync(
-            ChatMessages,
-            executionSettings: openAIPromptExecutionSettings,
-            kernel: SemanticKernel);
+                ChatMessages,
+                executionSettings: openAIPromptExecutionSettings,
+                kernel: SemanticKernel);
         }
         catch (Exception e)
         {
@@ -520,11 +539,34 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                 .GetAwaiter().GetResult();
         }
 
+        LastInferenceTime = DateTime.Now;
+
         Log.Information("Assistant > ");
-        var assistantMessage = result.Result.FirstOrDefault()?.Content;
-        if (assistantMessage == null)
+
+        string assistantMessage = "";
+        string errorMessage = "";
+        if (result != null)
         {
-            return;
+            try
+            {
+                assistantMessage = result.Result.FirstOrDefault()?.Content;
+                if (string.IsNullOrEmpty(assistantMessage))
+                {
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                errorMessage = e.Message;
+                ShowMessageBox("请求大模型数据失败! 错误信息：" + e.Message, "确定")
+                    .GetAwaiter().GetResult();
+            }
+        }
+
+        if (assistantMessage == "")
+        {
+            assistantMessage = errorMessage;
         }
 
         string audioText = "";
@@ -555,16 +597,19 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
         HistoryTextBlock += "\n" + text + "\n\n";
 
         HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-        ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-        : "<(未知)>:";
+            ? ("<" + m_CurrentCharacterPreset.Name + ">:")
+            : "<(未知)>:";
         HistoryTextBlock += "\n" + assistantMessage + "\n\n";
 
+        CaretIndex = Int32.MaxValue;
+
         var chatContentAfter = ChatMessagesToChatMessage();
-        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"), JsonConvert.SerializeObject(chatContentAfter, Formatting.Indented));
+        File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"),
+            JsonConvert.SerializeObject(chatContentAfter, Formatting.Indented));
 
         try
         {
-            VoiceOutputController.Speak(assistantMessage);
+            VoiceOutputController.Speak(audioText);
         }
         catch (Exception e)
         {
@@ -573,8 +618,12 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                 .GetAwaiter().GetResult();
         }
 
-        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", text, $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.YourName}）] [对话人({m_CurrentCharacterPreset.Name}）]：").GetAwaiter().GetResult();
-        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", assistantMessage, $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.Name}）] [对话人({m_CurrentCharacterPreset.YourName}）]：").GetAwaiter().GetResult();
+        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", text,
+                $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.YourName}）] [对话人({m_CurrentCharacterPreset.Name}）]：")
+            .GetAwaiter().GetResult();
+        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", assistantMessage,
+                $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.Name}）] [对话人({m_CurrentCharacterPreset.YourName}）]：")
+            .GetAwaiter().GetResult();
     }
 
 
@@ -583,52 +632,60 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
     {
         if (RunningState)
         {
-            // 停止运行
-            StopMessageProcessing();
-
-            if (CurrentCancellationToken != null && !CurrentCancellationToken.IsCancellationRequested)
+            Thread stopThread = new Thread(async () =>
             {
-                CurrentCancellationToken.Cancel();
-            }
+                RunCodeProtection = true;
 
-            foreach (var plugin in pluginInstances)
-            {
-                if (plugin != null && !plugin.HasExited)
+                // 停止运行
+                StopMessageProcessing();
+
+                if (CurrentCancellationToken != null && !CurrentCancellationToken.IsCancellationRequested)
                 {
-                    plugin.Kill();
+                    CurrentCancellationToken.Cancel();
                 }
-            }
 
-            // change status
-            GlobalStatus.CurrentRunningStatus = RunningStatus.Stopped;
-            GlobalStatus.CurrentStatus = SystemStatus.Idle;
+                foreach (var plugin in pluginInstances)
+                {
+                    if (plugin != null && !plugin.HasExited)
+                    {
+                        plugin.Kill();
+                    }
+                }
 
-            // clear resources
-            SemanticTextMemory = null;
-            if (PythonInstance != null)
-            {
-                PythonInstance.ShutdownPythonEngine();
-                PythonInstance = null;
-            }
-            // EmbeddingModelAndLocalLlmApiThread = null;
-            VoiceInputController = null;
-            SemanticKernel = null;
-            VoiceOutputController = null;
+                // change status
+                GlobalStatus.CurrentRunningStatus = RunningStatus.Stopped;
+                GlobalStatus.CurrentStatus = SystemStatus.Idle;
 
-            // change ui
-            RunButtonText = "点击开始运行!";
+                // clear resources
+                SemanticTextMemory = null;
+                if (PythonInstance != null)
+                {
+                    PythonInstance.ShutdownPythonEngine();
+                    PythonInstance = null;
+                }
 
-            InfoBarTitle = "当前状态：";
-            InfoBarMessage = "未启动...";
-            InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Information;
-            UpdateStatusColor(Color.FromRgb(33, 71, 192));
+                // EmbeddingModelAndLocalLlmApiThread = null;
+                VoiceInputController = null;
+                SemanticKernel = null;
+                VoiceOutputController = null;
 
-            StepperIndex = 0;
-            Steps = new AvaloniaList<string>();
+                // change ui
+                RunButtonText = "点击开始运行!";
 
-            // change running state
-            RunningState = false;
+                InfoBarTitle = "当前状态：";
+                InfoBarMessage = "未启动...";
+                InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Information;
+                UpdateStatusColor(Color.FromRgb(33, 71, 192));
 
+                StepperIndex = 0;
+                Steps = new AvaloniaList<string>();
+
+                // change running state
+                RunningState = false;
+
+                RunCodeProtection = false;
+            });
+            stopThread.Start();
             return;
         }
 
@@ -722,10 +779,10 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             InfoBarTitle = "当前状态：正在启动！\n";
             InfoBarMessage = "当前输入模式：" +
                              (m_CurrentModelParameter.TextInputMode == TextInputMode.Text
-                                ? "(文本模式 + 自定义Api请求输入源)"
-                                : "(语音模式 + 文本模式 + 自定义Api请求输入源)\n") +
+                                 ? "(文本模式 + 自定义Api请求输入源)"
+                                 : "(语音模式 + 文本模式 + 自定义Api请求输入源)\n") +
                              "当前大模型模式：" +
-            (m_CurrentModelParameter.ModelType == ModelType.Local
+                             (m_CurrentModelParameter.ModelType == ModelType.Local
                                  ? "(本地大模型)"
                                  : "(在线大模型)");
             InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Success;
@@ -747,7 +804,8 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                 BaseAddress = new Uri("http://127.0.0.1:14251/v1/embeddings")
             });
 
-            IMemoryStore memoryStore = await SqliteMemoryStore.ConnectAsync(Path.Join(CommonConfig.MemoryRootPath, "MemStore.db"));
+            IMemoryStore memoryStore =
+                await SqliteMemoryStore.ConnectAsync(Path.Join(CommonConfig.MemoryRootPath, "MemStore.db"));
             memoryBuilder.WithMemoryStore(memoryStore);
             SemanticTextMemory = memoryBuilder.Build();
 
@@ -760,15 +818,13 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             // 加载Embedding模型
             if (EmbeddingModelAndLocalLlmApiThread == null)
             {
-                EmbeddingModelAndLocalLlmApiThread = new Thread(() =>
-                {
-                    InvokeMethod.Run();
-                });
+                EmbeddingModelAndLocalLlmApiThread = new Thread(() => { InvokeMethod.Run(); });
                 EmbeddingModelAndLocalLlmApiThread.Start();
             }
+
             var request = new EmbeddingRequest
             {
-                input = new []{ "你好！" },
+                input = new[] { "你好！" },
                 model = "zpoint",
                 encoding_format = "float"
             };
@@ -788,7 +844,8 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             else
             {
                 Log.Information($"TestEmbeddingRequest Error: {response.StatusCode}");
-                ShowMessageBox("加载Embedding模型失败! 错误信息：" + response.StatusCode.ToString() + "\n" + response.Content, "确定").GetAwaiter().GetResult();
+                ShowMessageBox("加载Embedding模型失败! 错误信息：" + response.StatusCode.ToString() + "\n" + response.Content,
+                    "确定").GetAwaiter().GetResult();
             }
 
             try
@@ -813,7 +870,9 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 4;
             var builder = Kernel.CreateBuilder();
-            builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole().AddProvider(new FileLoggerProvider(Path.Join(CommonConfig.LogRootPath, "SemanticKernel.txt"))));
+            builder.Services.AddLogging(c =>
+                c.SetMinimumLevel(LogLevel.Trace).AddConsole()
+                    .AddProvider(new FileLoggerProvider(Path.Join(CommonConfig.LogRootPath, "SemanticKernel.txt"))));
 
 
             // 加载FunctionCall插件
@@ -825,12 +884,13 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
                 foreach (var file in pluginFiles)
                 {
-                    if (Path.GetExtension(file)==".dll")
+                    if (Path.GetExtension(file) == ".dll")
                     {
                         FunctionCallPluginLoader.LoadPlugin(file, builder);
                     }
                 }
             }
+
             FunctionCallPluginLoader.SetConfig();
 
 
@@ -841,22 +901,24 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey) ||
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName))
                 {
-                    ShowMessageBox("注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！", "我明白上述信息")
-                                                            .GetAwaiter().GetResult();
+                    ShowMessageBox(
+                            "注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！",
+                            "我明白上述信息")
+                        .GetAwaiter().GetResult();
 
                     builder.AddOpenAIChatCompletion("gpt-4o-mini",
-                    "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
-                    {
-                        BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions")
-                    });
+                        "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
+                        {
+                            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions")
+                        });
                 }
                 else
                 {
                     builder.AddOpenAIChatCompletion(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName,
-                    m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
-                    {
-                        BaseAddress = new Uri(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl)
-                    });
+                        m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
+                        {
+                            BaseAddress = new Uri(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl)
+                        });
                 }
             }
             else if (m_CurrentModelParameter.ModelType == ModelType.Local)
@@ -868,14 +930,15 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
             try
             {
-                IChatCompletionService chatCompletionService = SemanticKernel.GetRequiredService<IChatCompletionService>();
+                IChatCompletionService chatCompletionService =
+                    SemanticKernel.GetRequiredService<IChatCompletionService>();
                 var testLlmResult = chatCompletionService.GetChatMessageContentsAsync(
-                "你好！",
-                executionSettings: new OpenAIPromptExecutionSettings()
-                {
-                    Temperature = 0.7f
-                },
-                kernel: SemanticKernel);
+                    "你好！",
+                    executionSettings: new OpenAIPromptExecutionSettings()
+                    {
+                        Temperature = 0.7f
+                    },
+                    kernel: SemanticKernel);
             }
             catch (Exception e)
             {
@@ -890,10 +953,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                 UpdateStatusColor(Color.FromRgb(117, 101, 192));
                 StepperIndex = 6;
 
-                VoiceInputController = new(async (string text) =>
-                {
-                    QueueMessage(text);
-                });
+                VoiceInputController = new(async (string text) => { QueueMessage(text); });
 
                 VoiceInputController.StartListening(CurrentCancellationToken);
             }
@@ -901,7 +961,8 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
             // 启动TTS语音输出服务
             VoiceOutputController = new(PythonInstance);
-            var voiceOutputInferenceCode = File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
+            var voiceOutputInferenceCode =
+                File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
             var scripts = new List<string>();
             scripts.Add(voiceOutputInferenceCode);
             PythonInstance.StartPythonEngine(CurrentCancellationToken, scripts);
@@ -972,62 +1033,67 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                 ChatContent chatContent = new();
                 if (!File.Exists(historyFilePath))
                 {
-                    File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(new ChatContent(), Formatting.Indented));
+                    File.WriteAllText(historyFilePath,
+                        JsonConvert.SerializeObject(new ChatContent(), Formatting.Indented));
                 }
                 else
                 {
                     string historyJson = File.ReadAllText(historyFilePath);
                     var chatHistory = JsonConvert.DeserializeObject<ChatContent>(historyJson);
-                    if (chatHistory.Messages!=null)
+                    if (chatHistory.Messages != null)
                     {
                         chatContent.Messages = chatHistory.Messages;
                     }
                 }
+
                 chatContent.YourName = m_CurrentCharacterPreset.YourName;
                 chatContent.CharacterName = m_CurrentCharacterPreset.Name;
 
-                HistoryTextBlock += "当前人设信息："+ m_CurrentCharacterPreset.PresetContent + "\n";
+                HistoryTextBlock += "当前人设信息：" + m_CurrentCharacterPreset.PresetContent + "\n";
 
                 foreach (var message in chatContent.Messages)
                 {
                     switch (message.Role)
                     {
                         case Role.System:
+                        {
+                            if (string.IsNullOrEmpty(message.Content))
                             {
-                                if (string.IsNullOrEmpty(message.Content))
-                                {
-                                    break;
-                                }
-                                HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
-                                ChatMessages.AddSystemMessage(message.Content);
                                 break;
                             }
+
+                            HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
+                            ChatMessages.AddSystemMessage(message.Content);
+                            break;
+                        }
                         case Role.Assistant:
+                        {
+                            if (string.IsNullOrEmpty(message.Content))
                             {
-                                if (string.IsNullOrEmpty(message.Content))
-                                {
-                                    break;
-                                }
-                                HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-                                    ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-                                    : "<(未知)>:";
-                                HistoryTextBlock += "\n" + message.Content + "\n\n";
-                                ChatMessages.AddAssistantMessage(message.Content);
                                 break;
                             }
+
+                            HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
+                                ? ("<" + m_CurrentCharacterPreset.Name + ">:")
+                                : "<(未知)>:";
+                            HistoryTextBlock += "\n" + message.Content + "\n\n";
+                            ChatMessages.AddAssistantMessage(message.Content);
+                            break;
+                        }
                         case Role.User:
+                        {
+                            if (string.IsNullOrEmpty(message.Content))
                             {
-                                if (string.IsNullOrEmpty(message.Content))
-                                {
-                                    break;
-                                }
-                                HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
-                                    ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
-                                    : "<(未知)>:";
-                                HistoryTextBlock += "\n" + message.Content + "\n\n";
-                                ChatMessages.AddUserMessage(message.Content);
                                 break;
                             }
+
+                            HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
+                                ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
+                                : "<(未知)>:";
+                            HistoryTextBlock += "\n" + message.Content + "\n\n";
+                            ChatMessages.AddUserMessage(message.Content);
+                            break;
+                        }
                     }
                 }
 
@@ -1055,7 +1121,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory =Path.Join(CommonConfig.PluginRootPath, pluginName)
+                    WorkingDirectory = Path.Join(CommonConfig.PluginRootPath, pluginName)
                 };
 
                 var process = new Process { StartInfo = processStartInfo };
@@ -1077,10 +1143,7 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             RunningState = true;
 
             RunCodeProtection = false;
-        })
-        {
-
-        };
+        });
         startThread.Start();
     }
 
@@ -1139,9 +1202,11 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
             return;
         }
 
-        if (SemanticTextMemory != null && PythonInstance != null  && SemanticKernel != null && VoiceOutputController != null)
+        if (SemanticTextMemory != null && PythonInstance != null && SemanticKernel != null &&
+            VoiceOutputController != null)
         {
-            if (m_CurrentModelParameter.ModelType == ModelType.Local || m_CurrentModelParameter.ModelType == ModelType.Online)
+            if (m_CurrentModelParameter.ModelType == ModelType.Local ||
+                m_CurrentModelParameter.ModelType == ModelType.Online)
             {
                 QueueMessage(InputTextBox);
                 InputTextBox = "";
@@ -1169,9 +1234,6 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
     [RelayCommand]
     private async Task ClearHistory()
     {
-
-
-
         ChatMessages.Clear();
         HistoryTextBlock = "";
 
@@ -1185,36 +1247,36 @@ $"当然如果人物设定中出现了让你将人物心情用括号括起来的
 
             File.WriteAllText(historyFilePath, JsonConvert.SerializeObject(chatContent, Formatting.Indented));
 
-            HistoryTextBlock += "当前人设信息："+ m_CurrentCharacterPreset.PresetContent + "\n";
+            HistoryTextBlock += "当前人设信息：" + m_CurrentCharacterPreset.PresetContent + "\n";
 
             foreach (var message in chatContent.Messages)
             {
                 switch (message.Role)
                 {
                     case Role.System:
-                        {
-                            HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
-                            ChatMessages.AddSystemMessage(message.Content);
-                            break;
-                        }
+                    {
+                        HistoryTextBlock += "<系统信息>:\n" + message.Content + "\n\n";
+                        ChatMessages.AddSystemMessage(message.Content);
+                        break;
+                    }
                     case Role.Assistant:
-                        {
-                            HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
-                                ? ("<" + m_CurrentCharacterPreset.Name + ">:")
-                                : "<(未知)>:";
-                            HistoryTextBlock += "\n" + message.Content + "\n\n";
-                            ChatMessages.AddAssistantMessage(message.Content);
-                            break;
-                        }
+                    {
+                        HistoryTextBlock += m_CurrentCharacterPreset.Name != ""
+                            ? ("<" + m_CurrentCharacterPreset.Name + ">:")
+                            : "<(未知)>:";
+                        HistoryTextBlock += "\n" + message.Content + "\n\n";
+                        ChatMessages.AddAssistantMessage(message.Content);
+                        break;
+                    }
                     case Role.User:
-                        {
-                            HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
-                                ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
-                                : "<(未知)>:";
-                            HistoryTextBlock += "\n" + message.Content + "\n\n";
-                            ChatMessages.AddUserMessage(message.Content);
-                            break;
-                        }
+                    {
+                        HistoryTextBlock += m_CurrentCharacterPreset.YourName != ""
+                            ? ("<" + m_CurrentCharacterPreset.YourName + ">:")
+                            : "<(未知)>:";
+                        HistoryTextBlock += "\n" + message.Content + "\n\n";
+                        ChatMessages.AddUserMessage(message.Content);
+                        break;
+                    }
                 }
             }
 

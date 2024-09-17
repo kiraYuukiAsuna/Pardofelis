@@ -1,24 +1,26 @@
-﻿namespace PardofelisCore.Config;
+﻿using Microsoft.Extensions.Configuration;
+using PardofelisCore.Util;
+
+namespace PardofelisCore.Config;
 
 public static class CommonConfig
 {
     public static string CurrentWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
-    public static string CurrentUserHomeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    public static ApplicationConfig PardofelisAppSettings = new ApplicationConfig();
 
-    public static string PardofelisAppDataPath = Path.Join(CurrentUserHomeDirectory, "PardofelisAppData");
-    public static string ConfigRootPath = Path.Join(PardofelisAppDataPath, "Config");
-    public static string EmbeddingModelRootPath = Path.Join(PardofelisAppDataPath, "EmbeddingModel");
-    public static string FunctionCallPluginRootPath = Path.Join(PardofelisAppDataPath, "FunctionCallPlugin");
-    public static string LocalLlmModelRootPath = Path.Join(PardofelisAppDataPath, "LocalLlmModel");
-    public static string LogRootPath = Path.Join(PardofelisAppDataPath, "Log");
-    public static string MemoryRootPath = Path.Join(PardofelisAppDataPath, "Memory");
-    public static string PluginRootPath = Path.Join(PardofelisAppDataPath, "Plugin");
-    public static string PythonRootPath = Path.Join(PardofelisAppDataPath, "Python3.9.13");
-    public static string VoiceModelRootPath = Path.Join(PardofelisAppDataPath, "VoiceModel");
+    public static string PardofelisAppDataPath = "";
+    public static string ConfigRootPath = "";
+    public static string EmbeddingModelRootPath = "";
+    public static string FunctionCallPluginRootPath = "";
+    public static string LocalLlmModelRootPath = "";
+    public static string LogRootPath = "";
+    public static string MemoryRootPath = "";
+    public static string PluginRootPath = "";
+    public static string PythonRootPath = "";
+    public static string VoiceModelRootPath = "";
 
 
-    public static string GlobalConfigConfigPath = Path.Join(ConfigRootPath, "GlobalConfig.Instance.json");
-    public static string LlmModelConfigConfigPath = Path.Join(ConfigRootPath, "LlmModelConfig.json");
-    public static string ToolPromptConfigConfigPath = Path.Join(ConfigRootPath, "ToolPromptConfig.json");
-
+    public static string GlobalConfigConfigPath="";
+    public static string LlmModelConfigConfigPath = "";
+    public static string ToolPromptConfigConfigPath = "";
 }

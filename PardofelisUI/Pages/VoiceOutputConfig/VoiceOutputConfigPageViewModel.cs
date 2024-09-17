@@ -32,6 +32,8 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
     [RelayCommand]
     private void ReloadConfig()
     {
+        TTSConfigPath = Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/VoiceOutputConfig.json");
+
         PardofelisCore.Config.VoiceOutputConfig ttsConfig = PardofelisCore.Config.VoiceOutputConfig.ReadConfig(TTSConfigPath);
 
         Id = ttsConfig.Id;
