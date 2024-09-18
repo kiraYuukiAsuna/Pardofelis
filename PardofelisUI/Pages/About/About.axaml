@@ -8,18 +8,42 @@
              x:DataType="about:AboutPageViewModel"
              x:Class="PardofelisUI.Pages.About.AboutPage">
 
-    <controls:GlassCard Margin="40"
+    <controls:GlassCard Margin="40" Width="800"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
-        <controls:GroupBox Header="{Binding DynamicUIConfig.AppName}">
-            <StackPanel>
-                <Image Width="135"
-                       Height="135"
-                       Margin="30"
-                       HorizontalAlignment="Center"
-                       Source="/Assets/AppImage.png" />
-                <TextBlock Name="TextBlockWithInline">
-                    还没写 ：)
+        <controls:GroupBox Header="满穗AI助手">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Margin="0,0,0,0"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Text="满穗AI桌宠赞助名单:" />
+                <TextBlock VerticalAlignment="Top" TextWrapping="Wrap">
+                    萬里，
+                    西木，
+                    被炖的牢猫，
+                    渡渡鸟饲养员_穂いっぱい，
+                    三金，
+                    奇鲁伦达，
+                    穗满良，
+                    疏云悠，
+                    .，
+                    九一科比探花，
+                    穗安，
+                    b站 瓦上霜灰，
+                    太肝良心会碎，
+                    银翼，
+                    北の冰红猹，
+                    唐人且逆天，
+                    tamako33，
+                    （名字是空格），
+                    b站 岺越云梦，
+                    5843，
+                    保底不歪真君，
+                    蓝毛狮王，
+                    可喜可乐，
+                    菜月昴，
+                    流风回雪，
+                    政zheng
                 </TextBlock>
             </StackPanel>
         </controls:GroupBox>

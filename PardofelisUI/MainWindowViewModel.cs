@@ -64,7 +64,7 @@ public partial class MainWindowViewModel : PageBase
         };
     }
     
-    public MainWindowViewModel() : base(DynamicUIConfig.AppName, MaterialIconKind.Home)
+    public MainWindowViewModel() : base("满穗AI助手", MaterialIconKind.Home)
     {        
         _theme = SukiTheme.GetInstance();
         
