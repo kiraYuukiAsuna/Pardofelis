@@ -18,7 +18,7 @@
                     <TextBlock Margin="0,0,0,0"
                                VerticalAlignment="Center" HorizontalAlignment="Left"
                                FontWeight="Bold"
-                               Text="PardofelisAppData 所在路径：" />
+                               Text="PardofelisAppData 所在路径（更改路径后请关闭并重新打开软件，不然闪退给你看喵！）：" />
 
                     <TextBox VerticalAlignment="Top" HorizontalAlignment="Center"
                              Width="200"

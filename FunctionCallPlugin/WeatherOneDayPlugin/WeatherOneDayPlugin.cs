@@ -9,12 +9,14 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 
+namespace WeatherFifteenDaysPlugin;
+
 public class Config
 {
     public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
 }
 
-public class WeatherOneDayPlugin
+public class WeatherFifteenDaysPlugin
 {
     [KernelFunction]
     [Description("查询天气。")]
