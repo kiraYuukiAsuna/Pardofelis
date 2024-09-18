@@ -104,7 +104,7 @@ public class VoiceOutputController
                     }
                     catch (Exception e)
                     {
-                        Log.Error(e, "Failed to get embeddings.");
+                        Log.Error(e, "Failed to infer audio.");
                     }
                     finally
                     {

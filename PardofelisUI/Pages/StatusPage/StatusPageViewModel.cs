@@ -1041,7 +1041,12 @@ public partial class StatusPageViewModel : PageBase
                 File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
             var scripts = new List<string>();
             scripts.Add(voiceOutputInferenceCode);
-            PythonInstance.StartPythonEngine(CurrentCancellationToken, scripts);
+            var pyRes = PythonInstance.StartPythonEngine(CurrentCancellationToken, scripts);
+            if (!pyRes.Status)
+            {
+                Log.Error("Start TTS voice output service failed.");
+                ShowMessageBox("启动TTS语音输出服务失败!" + pyRes.Message, "确定").GetAwaiter().GetResult();
+            }
             
 
             // 启动空闲自动询问线程

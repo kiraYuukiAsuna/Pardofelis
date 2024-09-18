@@ -210,7 +210,12 @@ VoiceInputController voiceInputController = new((string messageUser) =>
 var voiceOutputInferenceCode = File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
 var scripts = new List<string>();
 scripts.Add(voiceOutputInferenceCode);
-pythonInstance.StartPythonEngine(cancellationToken, scripts);
+var pyResult = pythonInstance.StartPythonEngine(cancellationToken, scripts);
+if(!pyResult.Status)
+{
+    Console.WriteLine("Load python engine failed!" + pyResult.Message);
+    return -1;
+}
 
 voiceInputController.StartListening(cancellationToken);
 
