@@ -71,7 +71,8 @@ builder.Services.AddLogging(c => c.SetMinimumLevel(LogLevel.Trace).AddConsole().
 
 
 // 加载FunctionCall插件
-foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
+FunctionCallPluginLoader.Clear();
+foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.ToolCallPluginRootPath))
 {
     var pluginFiles = Directory.GetFiles(pluginFolder);
 
@@ -79,12 +80,12 @@ foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallP
     {
         if (Path.GetExtension(file)==".dll")
         {
-            FunctionCallPluginLoader.LoadPlugin(file, builder);
+            FunctionCallPluginLoader.EnumeratePlugin(file);
         }
     }
 }
-FunctionCallPluginLoader.SetConfig();
-
+FunctionCallPluginLoader.SetCurrentPluginWorkingDirectory();
+FunctionCallPluginLoader.AddPlugin(builder);
 
 // 连接大语言模型
 var apiConfig = ModelParameterConfig.ReadConfig(Path.Join(CommonConfig.PardofelisAppDataPath, @"Config\ModelConfig\default.json"));
@@ -96,7 +97,8 @@ if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
     builder.AddOpenAIChatCompletion("gpt-4o-mini",
     "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
     {
-        BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions")
+        BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions"),
+        Timeout = TimeSpan.FromSeconds(30)
     });
     /*builder.AddOpenAIChatCompletion("gpt-4o-mini",
         "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
@@ -114,7 +116,8 @@ else
     builder.AddOpenAIChatCompletion(apiConfig.OnlineLlmCreateInfo.OnlineModelName,
     apiConfig.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
     {
-        BaseAddress = new Uri(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl)
+        BaseAddress = new Uri(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl),
+        Timeout = TimeSpan.FromSeconds(30)
     });
 }
 var kernel = builder.Build();

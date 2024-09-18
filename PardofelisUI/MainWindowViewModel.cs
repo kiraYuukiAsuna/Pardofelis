@@ -40,10 +40,9 @@ public partial class MainWindowViewModel : PageBase
 {
     [ObservableProperty]
     private DynamicUIConfig _dynamicUIConfig;
-    public MainWindowViewModel() : base(DynamicUIConfig.AppName, MaterialIconKind.Home)
-    {        
-        _theme = SukiTheme.GetInstance();
 
+    public void LoadPages()
+    {
         Pages = new AvaloniaList<PageBase>
         {
             new HomePageViewModel(),
@@ -63,8 +62,13 @@ public partial class MainWindowViewModel : PageBase
             if (page is null || ActivePage?.GetType() == pageType) return;
             ActivePage = page;
         };
-
-        Themes = _theme.ColorThemes;
+    }
+    
+    public MainWindowViewModel() : base(DynamicUIConfig.AppName, MaterialIconKind.Home)
+    {        
+        _theme = SukiTheme.GetInstance();
+        
+        ColorThemes = _theme.ColorThemes;
         BaseTheme = _theme.ActiveBaseTheme;
 
         // Subscribe to the base theme changed events
@@ -103,12 +107,13 @@ public partial class MainWindowViewModel : PageBase
     [RelayCommand]
     private static void OpenUrl(string url) => OpenUrlInternal(url);
 
-    public IAvaloniaReadOnlyList<PageBase> Pages { get; }
+    [ObservableProperty] 
+    private IAvaloniaList<PageBase> _pages=new AvaloniaList<PageBase>();
     [ObservableProperty] private PageBase? _activePage;
 
-    PageNavigationService _pageNavigationService = new();
+    private PageNavigationService _pageNavigationService = new();
 
-    public IAvaloniaReadOnlyList<SukiColorTheme> Themes { get; }
+    [ObservableProperty] private IAvaloniaReadOnlyList<SukiColorTheme> _colorThemes=new AvaloniaList<SukiColorTheme>();
 
     [ObservableProperty] private ThemeVariant _baseTheme;
     [ObservableProperty] private bool _animationsEnabled;

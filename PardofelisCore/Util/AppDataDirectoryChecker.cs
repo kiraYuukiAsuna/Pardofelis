@@ -13,10 +13,11 @@ public class AppDataDirectoryChecker
 
     private static void ReloadConifg()
     {
+        CommonConfig.ToolCallPluginRootPath = Path.Join(CommonConfig.CurrentWorkingDirectory, "ToolCallPlugin");
+        
         CommonConfig.PardofelisAppDataPath = Path.Join(CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath, "PardofelisAppData");
         CommonConfig.ConfigRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Config");
         CommonConfig.EmbeddingModelRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "EmbeddingModel");
-        CommonConfig.FunctionCallPluginRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "FunctionCallPlugin");
         CommonConfig.LocalLlmModelRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "LocalLlmModel");
         CommonConfig.LogRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Log");
         CommonConfig.MemoryRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Memory");
@@ -78,6 +79,12 @@ public class AppDataDirectoryChecker
 
     public static ResultWrap CheckAppDataDirectoryAndCreateNoExist()
     {
+        if (!Directory.Exists(CommonConfig.ToolCallPluginRootPath))
+        {
+            Log.Information($"ToolCallPluginRootPath [{CommonConfig.ToolCallPluginRootPath}] not exist");
+            Directory.CreateDirectory(CommonConfig.ToolCallPluginRootPath);
+        }
+        
         if (!Directory.Exists(CommonConfig.PardofelisAppDataPath))
         {
             Log.Information($"PardofelisAppDataPath [{CommonConfig.PardofelisAppDataPath}] not exist");
@@ -100,11 +107,6 @@ public class AppDataDirectoryChecker
         {
             Log.Information($"EmbeddingModelRootPath [{CommonConfig.EmbeddingModelRootPath}] not exist");
             Directory.CreateDirectory(CommonConfig.EmbeddingModelRootPath);
-        }
-        if (!Directory.Exists(CommonConfig.FunctionCallPluginRootPath))
-        {
-            Log.Information($"FunctionCallPluginRootPath [{CommonConfig.FunctionCallPluginRootPath}] not exist");
-            Directory.CreateDirectory(CommonConfig.FunctionCallPluginRootPath);
         }
         if (!Directory.Exists(CommonConfig.LocalLlmModelRootPath))
         {

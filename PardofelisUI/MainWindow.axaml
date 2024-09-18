@@ -20,6 +20,7 @@
                  mc:Ignorable="d">
 	<suki:SukiWindow.Hosts>
 		<suki:SukiDialogHost Name="DialogHost"/>
+        <suki:SukiToastHost Name="ToastHost"/>
 	</suki:SukiWindow.Hosts>
     <suki:SukiWindow.MenuItems>
         <MenuItem Header="亮暗与背景动画">
@@ -39,7 +40,7 @@
         <MenuItem Header="主题颜色">
             <MenuItem Click="MenuItem_OnClick"
                       Header="切换到..."
-                      ItemsSource="{Binding Themes}">
+                      ItemsSource="{Binding ColorThemes}">
                 <MenuItem.DataTemplates>
                     <DataTemplate DataType="{x:Type models:SukiColorTheme}">
                         <TextBlock Foreground="{Binding PrimaryBrush}" Text="{Binding DisplayName}" />

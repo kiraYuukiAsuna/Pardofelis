@@ -21,7 +21,22 @@ public partial class MainWindow : SukiWindow
         this.Closing += OnMainWindowClosing;
 
         DialogHost.Manager = DynamicUIConfig.GlobalDialogManager;
+        ToastHost.Manager = DynamicUIConfig.GlobalToastManager;
 
+        DataContext = new MainWindowViewModel();
+            
+        var model = DataContext as MainWindowViewModel;
+        if (model == null)
+        {
+            Log.Error("MainWindow DataContext is not MainWindowViewModel.");
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("错误！")
+                .WithContent($"MainWindow DataContext as MainWindowViewModel failed!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
+            return;
+        }
+        
         if (Directory.Exists(CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath))
         {
             Log.Information($"PardofelisAppDataPrefixPath [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}] exists.");
@@ -47,6 +62,9 @@ public partial class MainWindow : SukiWindow
                 .WithActionButton("确定", _ => { }, true)
                 .TryShow();
         }
+        
+        model.LoadPages();
+
     }
 
     private void MenuItem_OnClick(object? sender, RoutedEventArgs e)

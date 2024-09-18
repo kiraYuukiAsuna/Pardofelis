@@ -8,10 +8,13 @@ public static class CommonConfig
     public static string CurrentWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
     public static ApplicationConfig PardofelisAppSettings = new ApplicationConfig();
 
+    
+    public static string ToolCallPluginRootPath = "";
+
+    
     public static string PardofelisAppDataPath = "";
     public static string ConfigRootPath = "";
     public static string EmbeddingModelRootPath = "";
-    public static string FunctionCallPluginRootPath = "";
     public static string LocalLlmModelRootPath = "";
     public static string LogRootPath = "";
     public static string MemoryRootPath = "";

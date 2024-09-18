@@ -13,18 +13,42 @@ public class PluginAssemblyInfo
 {
     public string PluginFile { get; set; }
     public Assembly Assembly { get; set; }
-    public PluginAssemblyInfo(string pluginFile, Assembly assembly)
+    public Type Type { get; set; }
+    
+    public PluginAssemblyInfo(string pluginFile, Assembly assembly, Type type)
     {
         PluginFile = pluginFile;
         Assembly = assembly;
+        Type = type;
+    }
+}
+
+public class PluginConfigInfo
+{
+    public string PluginFile { get; set; }
+    public Assembly Assembly { get; set; }
+    public Type Type { get; set; }
+    
+    public PluginConfigInfo(string pluginFile, Assembly assembly, Type type)
+    {
+        PluginFile = pluginFile;
+        Assembly = assembly;
+        Type = type;
     }
 }
 
 public class FunctionCallPluginLoader
 {
     public static List<PluginAssemblyInfo> PluginFiles = new();
+    public static List<PluginConfigInfo> PluginConfigs = new();
 
-    public static void LoadPlugin(string pluginFile, IKernelBuilder builder)
+    public static void Clear()
+    {
+        PluginFiles.Clear();
+        PluginConfigs.Clear();
+    }
+    
+    public static void EnumeratePlugin(string pluginFile)
     {
         Assembly assembly = Assembly.LoadFile(pluginFile);
         try
@@ -50,11 +74,7 @@ public class FunctionCallPluginLoader
                 }
                 else
                 {
-                    var instance = type.Assembly.CreateInstance(type.FullName);
-
-                    builder.Plugins.AddFromObject(instance);
-
-                    PluginFiles.Add(new PluginAssemblyInfo(pluginFile, assembly));
+                    PluginFiles.Add(new PluginAssemblyInfo(pluginFile, assembly, type));
                 }
             }
         }
@@ -64,7 +84,7 @@ public class FunctionCallPluginLoader
         }
     }
 
-    public static void SetConfig()
+    public static void SetCurrentPluginWorkingDirectory()
     {
         foreach (var plugin in PluginFiles)
         {
@@ -73,6 +93,8 @@ public class FunctionCallPluginLoader
             {
                 if (type.Name == "Config")
                 {
+                    PluginConfigs.Add(new PluginConfigInfo(plugin.PluginFile, plugin.Assembly, type));
+                    
                     foundConfig = true;
                     FieldInfo fieldInfo = type.GetField("CurrentPluginWorkingDirectory", BindingFlags.Static | BindingFlags.Public);
                     if (fieldInfo != null)
@@ -93,6 +115,26 @@ public class FunctionCallPluginLoader
             {
                 Log.Information("Type 'Config' not found in the assembly.");
             }
+        }
+    }
+
+    public static void AddPlugin(IKernelBuilder builder)
+    {
+        foreach (var plugin in PluginFiles)
+        {
+            if(plugin.Type.FullName == null)
+            {
+                continue;
+            }
+            
+            var instance = plugin.Type.Assembly.CreateInstance(plugin.Type.FullName);
+
+            if(instance == null)
+            {
+                continue;
+            }
+            
+            builder.Plugins.AddFromObject(instance);
         }
     }
 }

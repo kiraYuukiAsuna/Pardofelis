@@ -21,9 +21,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var mainViewModel = new MainWindowViewModel();
-            var viewLocator = Current?.DataTemplates.First(x => x is ViewLocator);
-            desktop.MainWindow = viewLocator.Build(mainViewModel) as Window;
+            //var mainViewModel = new MainWindowViewModel();
+            //var viewLocator = Current?.DataTemplates.First(x => x is ViewLocator);
+            desktop.MainWindow = new MainWindow(); //viewLocator.Build(mainViewModel) as Window;
         }
 
         base.OnFrameworkInitializationCompleted();

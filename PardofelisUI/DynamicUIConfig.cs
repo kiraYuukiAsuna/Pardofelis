@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SukiUI.Toasts;
 
 namespace PardofelisUI
 {
@@ -12,5 +13,7 @@ namespace PardofelisUI
         public static string AppName { get; set; } = "PardofelisUI";
 
         public static SukiDialogManager GlobalDialogManager = new();
+        public static SukiToastManager GlobalToastManager = new();
+
     }
 }

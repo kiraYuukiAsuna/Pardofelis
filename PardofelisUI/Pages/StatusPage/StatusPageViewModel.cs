@@ -33,8 +33,10 @@ using PardofelisCore.LlmController.OpenAiModel;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Windows.Input;
+using Avalonia.Controls.Notifications;
 using ReactiveUI;
 using SukiUI.Dialogs;
+using SukiUI.Toasts;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -677,6 +679,8 @@ public partial class StatusPageViewModel : PageBase
                 StepperIndex = 0;
                 Steps = new AvaloniaList<string>();
 
+                ShowToast("停止成功!", "停止成功!", NotificationType.Success);
+                
                 // change running state
                 RunningState = false;
 
@@ -875,7 +879,9 @@ public partial class StatusPageViewModel : PageBase
             // 加载FunctionCall插件
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 5;
-            foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.FunctionCallPluginRootPath))
+            
+            FunctionCallPluginLoader.Clear();
+            foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.ToolCallPluginRootPath))
             {
                 var pluginFiles = Directory.GetFiles(pluginFolder);
 
@@ -883,13 +889,14 @@ public partial class StatusPageViewModel : PageBase
                 {
                     if (Path.GetExtension(file) == ".dll")
                     {
-                        FunctionCallPluginLoader.LoadPlugin(file, builder);
+                        FunctionCallPluginLoader.EnumeratePlugin(file);
                     }
                 }
             }
 
-            FunctionCallPluginLoader.SetConfig();
-
+            FunctionCallPluginLoader.SetCurrentPluginWorkingDirectory();
+            FunctionCallPluginLoader.AddPlugin(builder);
+            
 
             // 连接大语言模型
             if (m_CurrentModelParameter.ModelType == ModelType.Online)
@@ -906,7 +913,8 @@ public partial class StatusPageViewModel : PageBase
                     builder.AddOpenAIChatCompletion("gpt-4o-mini",
                         "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
                         {
-                            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions")
+                            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions"),
+                            Timeout = TimeSpan.FromSeconds(30)
                         });
                 }
                 else
@@ -914,7 +922,8 @@ public partial class StatusPageViewModel : PageBase
                     builder.AddOpenAIChatCompletion(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName,
                         m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
                         {
-                            BaseAddress = new Uri(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl)
+                            BaseAddress = new Uri(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl),
+                            Timeout = TimeSpan.FromSeconds(30)
                         });
                 }
             }
@@ -1139,6 +1148,8 @@ public partial class StatusPageViewModel : PageBase
             InfoBarTitle = "当前状态：启动成功！\n";
             UpdateStatusColor(Color.FromRgb(36, 192, 81));
 
+            ShowToast("启动成功!", "启动成功!", NotificationType.Success);
+            
             LastInferenceTime = DateTime.Now;
 
             RunningState = true;
@@ -1165,6 +1176,27 @@ public partial class StatusPageViewModel : PageBase
                 .WithContent(message)
                 .WithActionButton(buttonText, _ => { }, true)
                 .TryShow();
+        }
+    }
+    
+    private async Task ShowToast(string title, string content, NotificationType toastType)
+    {
+        // 检查是否在UI线程上运行
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            // 将操作调度到UI线程
+            await Dispatcher.UIThread.InvokeAsync(() => ShowToast(title, content, toastType));
+        }
+        else
+        {
+            // 如果已经在UI线程上，直接执行
+            DynamicUIConfig.GlobalToastManager.CreateToast()
+                .WithTitle(title)
+                .WithContent(content)
+                .OfType(toastType)
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Dismiss().ByClicking()
+                .Queue();
         }
     }
 
