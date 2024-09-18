@@ -970,9 +970,10 @@ public partial class StatusPageViewModel : PageBase
                 // TODO: Local Llm Model
             }
 
-            SemanticKernel = builder.Build();
             try
             {
+                SemanticKernel = builder.Build();
+
                 IChatCompletionService chatCompletionService =
                     SemanticKernel.GetRequiredService<IChatCompletionService>();
                 var testLlmResult = chatCompletionService.GetChatMessageContentsAsync(
