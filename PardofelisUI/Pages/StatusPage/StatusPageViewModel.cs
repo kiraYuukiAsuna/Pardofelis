@@ -34,6 +34,8 @@ using System.Text;
 using System.Collections.Concurrent;
 using System.Windows.Input;
 using Avalonia.Controls.Notifications;
+using PardofelisCore.Api;
+using PardofelisUI.Utilities;
 using ReactiveUI;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
@@ -57,7 +59,7 @@ public partial class StatusPageViewModel : PageBase
 
         InfoBarTitle = "当前状态：";
         InfoBarMessage = "未启动...";
-        InfoBarSeverity = Avalonia.Controls.Notifications.NotificationType.Information;
+        InfoBarSeverity = NotificationType.Information;
         StatusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
 
         HandleEnterKeyCommand = ReactiveCommand.Create<string>(HandleEnterKey);
@@ -78,7 +80,7 @@ public partial class StatusPageViewModel : PageBase
     [ObservableProperty] AvaloniaList<string> _modelParameterConfigList = [];
     [ObservableProperty] private string _selectedModelParameterConfig;
     [ObservableProperty] private string _selectedCharacterPresetConfig;
-    
+
     [ObservableProperty] private SolidColorBrush _statusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
 
     public ICommand HandleEnterKeyCommand { get; }
@@ -106,7 +108,7 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-
+            
             DynamicUIConfig.GlobalDialogManager.CreateDialog()
                 .WithTitle("错误！")
                 .WithContent("加载配置文件失败！没有选择有效的大语言模型配置文件!")
@@ -382,6 +384,9 @@ public partial class StatusPageViewModel : PageBase
 
     private BlockingCollection<string> _messageQueue = new BlockingCollection<string>();
     private Thread _messageProcessingThread;
+
+    private Thread? ExternelApiServerThread;
+    private ApiServer ExternelApiServer;
 
     private void StartMessageProcessing()
     {
@@ -680,13 +685,18 @@ public partial class StatusPageViewModel : PageBase
                 Steps = new AvaloniaList<string>();
 
                 ShowToast("停止成功!", "停止成功!", NotificationType.Success);
-                
+
                 // change running state
                 RunningState = false;
 
                 RunCodeProtection = false;
             });
             stopThread.Start();
+            return;
+        }
+
+        if (!PardofelisAppDataPrefixChecker.Check())
+        {
             return;
         }
 
@@ -747,6 +757,16 @@ public partial class StatusPageViewModel : PageBase
             return;
         }
 
+        if (m_CurrentModelParameter.ModelType == ModelType.Local)
+        {
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("本地模型支持已禁用，请使用在线模型!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
+            return;
+        }
+
 
         Thread startThread = new Thread(async () =>
         {
@@ -763,7 +783,7 @@ public partial class StatusPageViewModel : PageBase
             {
                 Steps = new AvaloniaList<string>()
                 {
-                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "连接大语言模型", "加载FunctionCall插件", "启动TTS语音输出服务",
+                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "启动外部ApiServer", "加载FunctionCall插件", "连接大语言模型", "启动TTS语音输出服务",
                 };
                 StepperIndex = 0;
             }
@@ -771,7 +791,7 @@ public partial class StatusPageViewModel : PageBase
             {
                 Steps = new AvaloniaList<string>()
                 {
-                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "连接大语言模型", "加载FunctionCall插件", "启动语音输入服务", "启动TTS语音输出服务",
+                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "启动外部ApiServer", "加载FunctionCall插件", "连接大语言模型", "启动语音输入服务", "启动TTS语音输出服务",
                 };
                 StepperIndex = 0;
             }
@@ -817,12 +837,14 @@ public partial class StatusPageViewModel : PageBase
 
 
             // 加载Embedding模型
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 3;
             if (EmbeddingModelAndLocalLlmApiThread == null)
             {
                 EmbeddingModelAndLocalLlmApiThread = new Thread(() => { InvokeMethod.Run(); });
                 EmbeddingModelAndLocalLlmApiThread.Start();
             }
-
+            
             var request = new EmbeddingRequest
             {
                 input = new[] { "你好！" },
@@ -862,24 +884,38 @@ public partial class StatusPageViewModel : PageBase
                 Log.Error(e.Message);
                 ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
             }
-
-            UpdateStatusColor(Color.FromRgb(117, 101, 192));
-            StepperIndex = 3;
-
-
-            // 
+            
+            
+            // ExternalApiServer
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 4;
+            if (ExternelApiServerThread == null)
+            {
+                ExternelApiServer = new ApiServer();
+                ExternelApiServerThread = new Thread(() =>
+                {
+                    ExternelApiServer.StartBlocking((text) =>
+                    {
+                        if (!string.IsNullOrEmpty(text))
+                        {
+                            QueueMessage(text);
+                        }
+                    });
+                });
+                ExternelApiServerThread.Start();
+            }
+
+            
+            // 
             var builder = Kernel.CreateBuilder();
             builder.Services.AddLogging(c =>
                 c.SetMinimumLevel(LogLevel.Trace).AddConsole()
                     .AddProvider(new FileLoggerProvider(Path.Join(CommonConfig.LogRootPath, "SemanticKernel.txt"))));
-
-
+            
+            
             // 加载FunctionCall插件
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 5;
-            
             FunctionCallPluginLoader.Clear();
             foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.ToolCallPluginRootPath))
             {
@@ -899,6 +935,8 @@ public partial class StatusPageViewModel : PageBase
             
 
             // 连接大语言模型
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 6;
             if (m_CurrentModelParameter.ModelType == ModelType.Online)
             {
                 if (String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl) ||
@@ -933,7 +971,6 @@ public partial class StatusPageViewModel : PageBase
             }
 
             SemanticKernel = builder.Build();
-
             try
             {
                 IChatCompletionService chatCompletionService =
@@ -956,9 +993,8 @@ public partial class StatusPageViewModel : PageBase
             // 启动语音输入服务
             if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
             {
+                StepperIndex = 7;
                 UpdateStatusColor(Color.FromRgb(117, 101, 192));
-                StepperIndex = 6;
-
                 VoiceInputController = new(async (string text) => { QueueMessage(text); });
 
                 VoiceInputController.StartListening(CurrentCancellationToken);
@@ -966,18 +1002,23 @@ public partial class StatusPageViewModel : PageBase
 
 
             // 启动TTS语音输出服务
+            if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
+            {
+                StepperIndex = 8;
+                UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            }
+            else
+            {
+                StepperIndex = 7;
+                UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            }
             VoiceOutputController = new(PythonInstance);
             var voiceOutputInferenceCode =
                 File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
             var scripts = new List<string>();
             scripts.Add(voiceOutputInferenceCode);
             PythonInstance.StartPythonEngine(CurrentCancellationToken, scripts);
-
-            if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
-            {
-                StepperIndex = 7;
-            }
-
+            
 
             // 启动空闲自动询问线程
             idleAskThread = new Thread(() =>
@@ -1120,7 +1161,7 @@ public partial class StatusPageViewModel : PageBase
                 var processStartInfo = new ProcessStartInfo
                 {
                     FileName = Path.Join(CommonConfig.PythonRootPath, "python.exe"),
-                    Arguments = Path.Join(CommonConfig.PluginRootPath, pluginName + "/main.py"),
+                    Arguments = Path.Join(CommonConfig.PluginRootPath, pluginName, "main.py"),
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -1130,16 +1171,17 @@ public partial class StatusPageViewModel : PageBase
 
                 // Add the environment variable
                 processStartInfo.EnvironmentVariables["QT_QPA_PLATFORM_PLUGIN_PATH"] =
-                     Path.Join(CommonConfig.PythonRootPath, "Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms");
+                    Path.Join(CommonConfig.PythonRootPath, "Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms");
 
                 var process = new Process { StartInfo = processStartInfo };
-                
+
                 if (!process.Start())
                 {
                     Log.Error("Failed to start plugin: " + pluginName);
                     ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定");
                     continue;
                 }
+
                 pluginInstances.Add(process);
             }
 
@@ -1149,7 +1191,7 @@ public partial class StatusPageViewModel : PageBase
             UpdateStatusColor(Color.FromRgb(36, 192, 81));
 
             ShowToast("启动成功!", "启动成功!", NotificationType.Success);
-            
+
             LastInferenceTime = DateTime.Now;
 
             RunningState = true;
@@ -1178,7 +1220,7 @@ public partial class StatusPageViewModel : PageBase
                 .TryShow();
         }
     }
-    
+
     private async Task ShowToast(string title, string content, NotificationType toastType)
     {
         // 检查是否在UI线程上运行

@@ -125,14 +125,14 @@
                                  Text="{Binding HistoryTextBlock}" 
                                  TextChanged="TextBox_OnTextChanged"/>
                         <StackPanel Orientation="Horizontal">
-                            <TextBox Text="{Binding InputTextBox}" Width="600"
+                            <TextBox Text="{Binding InputTextBox}" Width="500"
                                      VerticalAlignment="Top" HorizontalAlignment="Left"
                                      TextWrapping="Wrap"
 									 KeyDown ="InputTextBox_PreviewKeyDown" />
                             <Button Margin="15,0,0,0"
                                     VerticalAlignment="Top" HorizontalAlignment="Right"
                                     Command="{Binding InferCommand}"
-                                    Content="发送" />
+                                    Content="发送（Ctrl+Enter）" />
                         </StackPanel>
                     </StackPanel>
                 </suki:GroupBox>

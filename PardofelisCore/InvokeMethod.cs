@@ -28,7 +28,6 @@ public static class InvokeMethod
 
         var apiKey = "";
 
-
         builder.Services.AddSwaggerGen();
 /*
  options =>

@@ -18,20 +18,20 @@ using Microsoft.SemanticKernel.Memory;
 
 
 AppDataDirectoryChecker.InitPardofelisAppSettings();
-if (Directory.Exists(CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath))
+if (Directory.Exists(AppDataDirectoryChecker.GetCurrentPardofelisAppDataPrefixPath().Message))
 {
-    Console.WriteLine($"PardofelisAppDataPrefixPath [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}] exists.");
+    Console.WriteLine($"PardofelisAppDataPrefixPath [{AppDataDirectoryChecker.GetCurrentPardofelisAppDataPrefixPath().Message}] exists.");
 }
 else
 {
-    Console.WriteLine($"PardofelisAppDataPrefixPath [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}] not exists.");
+    Console.WriteLine($"PardofelisAppDataPrefixPath [{AppDataDirectoryChecker.GetCurrentPardofelisAppDataPrefixPath().Message}] not exists.");
     return -1;
 }
 var res = AppDataDirectoryChecker.CheckAppDataDirectoryAndCreateNoExist();
 if(res.Status == false)
 {
     Console.WriteLine(res.Message);
-    Console.WriteLine($"Failed to find correct PardofelisAppData path. CurrentPath: [{CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath}]. Please set it to the correct path!");
+    Console.WriteLine($"Failed to find correct PardofelisAppData path. CurrentPath: [{AppDataDirectoryChecker.GetCurrentPardofelisAppDataPrefixPath().Message}]. Please set it to the correct path!");
     return -1;
     // AppDataDirectoryChecker.SetCurrentPardofelisAppDataPrefixPath("D:\\Dev");
 }

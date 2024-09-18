@@ -11,6 +11,7 @@ namespace PardofelisCore.Config;
 public struct VoiceOutputConfig
 {
     public int Id { get; set; }
+    public string TTSModelName { get; set; }
     public string Format { get; set; }
     public string Lang { get; set; }
     public double Length { get; set; }
@@ -22,6 +23,7 @@ public struct VoiceOutputConfig
     public VoiceOutputConfig()
     {
         Id = 0;
+        TTSModelName = "Default";
         Format = "wav";
         Lang = "zh";
         Length = 1.0;
@@ -31,10 +33,11 @@ public struct VoiceOutputConfig
         SegmentSize = 50;
     }
 
-    public VoiceOutputConfig(int id, string format, string lang, double length, double noise, double noisew,
+    public VoiceOutputConfig(int id, string ttsModelName, string format, string lang, double length, double noise, double noisew,
         double sdpRatio, int segmentSize)
     {
         Id = id;
+        TTSModelName = ttsModelName;
         Format = format;
         Lang = lang;
         Length = length;

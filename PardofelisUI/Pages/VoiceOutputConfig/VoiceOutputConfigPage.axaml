@@ -14,7 +14,7 @@
                     <Button Margin="15,0,0,0"
                             VerticalAlignment="Top" HorizontalAlignment="Left"
                             Command="{Binding ReloadConfigCommand}"
-                            Content="刷新配置文件列表" />
+                            Content="刷新配置信息" />
                 </Panel>
                 <Panel>
                     <TextBlock Margin="0,0,0,0"
@@ -25,6 +25,16 @@
                                    Width="100"
                                    Value="{Binding Id}" Increment="1"
                                    Minimum="0" />
+                </Panel>
+                <Panel>
+                    <TextBlock Margin="0,0,0,0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               FontWeight="Bold"
+                               Text="选择人物设定配置文件:" />
+                    <ComboBox VerticalAlignment="Top" HorizontalAlignment="Right"
+                              Width="200"
+                              ItemsSource="{Binding TtsModelNameList}"
+                              SelectedItem="{Binding CurrentTTSModelName}" />
                 </Panel>
                 <Panel>
                     <TextBlock Margin="0,0,0,0"
