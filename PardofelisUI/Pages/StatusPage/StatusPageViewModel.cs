@@ -816,6 +816,7 @@ public partial class StatusPageViewModel : PageBase
 
 
             // 启动向量数据库
+            Log.Information("Start vector database.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 1;
 
@@ -831,12 +832,14 @@ public partial class StatusPageViewModel : PageBase
             SemanticTextMemory = memoryBuilder.Build();
 
             // 初始化Python环境
+            Log.Information("Start python environment.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 2;
             PythonInstance = new PythonInstance(CommonConfig.PythonRootPath);
 
 
             // 加载Embedding模型
+            Log.Information("Load embedding model.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 3;
             if (EmbeddingModelAndLocalLlmApiThread == null)
@@ -887,6 +890,7 @@ public partial class StatusPageViewModel : PageBase
             
             
             // ExternalApiServer
+            Log.Information("Start external api server.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 4;
             if (ExternelApiServerThread == null)
@@ -894,13 +898,20 @@ public partial class StatusPageViewModel : PageBase
                 ExternelApiServer = new ApiServer();
                 ExternelApiServerThread = new Thread(() =>
                 {
-                    ExternelApiServer.StartBlocking((text) =>
+                    try
                     {
-                        if (!string.IsNullOrEmpty(text))
+                        ExternelApiServer.StartBlocking((text) =>
                         {
-                            QueueMessage(text);
-                        }
-                    });
+                            if (!string.IsNullOrEmpty(text))
+                            {
+                                QueueMessage(text);
+                            }
+                        });
+                    }catch (Exception e)
+                    {
+                        Log.Error(e.Message);
+                        ShowMessageBox("启动外部Api服务失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
+                    }
                 });
                 ExternelApiServerThread.Start();
             }
@@ -914,6 +925,7 @@ public partial class StatusPageViewModel : PageBase
             
             
             // 加载FunctionCall插件
+            Log.Information("Load function call plugin.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 5;
             FunctionCallPluginLoader.Clear();
@@ -930,11 +942,20 @@ public partial class StatusPageViewModel : PageBase
                 }
             }
 
-            FunctionCallPluginLoader.SetCurrentPluginWorkingDirectory();
-            FunctionCallPluginLoader.AddPlugin(builder);
-            
+            try
+            {
+                FunctionCallPluginLoader.SetCurrentPluginWorkingDirectory();
+                FunctionCallPluginLoader.AddPlugin(builder);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                ShowMessageBox(e.Message, "确定").GetAwaiter().GetResult();
+            }
+
 
             // 连接大语言模型
+            Log.Information("Connect to large language model.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 6;
             if (m_CurrentModelParameter.ModelType == ModelType.Online)
@@ -992,6 +1013,7 @@ public partial class StatusPageViewModel : PageBase
 
 
             // 启动语音输入服务
+            Log.Information("Start voice input service.");
             if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
             {
                 StepperIndex = 7;
@@ -1003,6 +1025,7 @@ public partial class StatusPageViewModel : PageBase
 
 
             // 启动TTS语音输出服务
+            Log.Information("Start TTS voice output service.");
             if (m_CurrentModelParameter.TextInputMode == TextInputMode.Voice)
             {
                 StepperIndex = 8;

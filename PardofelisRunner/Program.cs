@@ -85,7 +85,14 @@ foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.ToolCallPlugi
     }
 }
 FunctionCallPluginLoader.SetCurrentPluginWorkingDirectory();
-FunctionCallPluginLoader.AddPlugin(builder);
+try
+{
+    FunctionCallPluginLoader.AddPlugin(builder);
+}
+catch (Exception e)
+{
+    Console.WriteLine(e.Message);
+}
 
 // 连接大语言模型
 var apiConfig = ModelParameterConfig.ReadConfig(Path.Join(CommonConfig.PardofelisAppDataPath, @"Config\ModelConfig\default.json"));

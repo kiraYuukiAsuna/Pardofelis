@@ -1,3 +1,4 @@
+chcp 65001
 echo [PackageSystem] Start build installer...
 if exist "..\PardofelisRunner\bin\Release\net8.0\publish\win-x64\ggml.dll" del "..\PardofelisRunner\bin\Release\net8.0\publish\win-x64\ggml.dll"
 if exist "..\PardofelisRunner\bin\Release\net8.0\publish\win-x64\llama.dll" del "..\PardofelisRunner\bin\Release\net8.0\publish\win-x64\llama.dll"

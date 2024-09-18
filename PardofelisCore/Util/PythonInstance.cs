@@ -49,59 +49,64 @@ public class PythonInstance
 
     private void ThreadProcess(CancellationTokenSource cancellationToken)
     {
-        Runtime.PythonDLL = Path.Join(PythonRootPath, "python39.dll");
-        PythonEngine.Initialize();
-
-        ThreadState = PythonEngine.BeginAllowThreads();
-
-        var ttsConfigPath = Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/VoiceOutputConfig.json");
-
-        PardofelisCore.Config.VoiceOutputConfig ttsConfig =
-            PardofelisCore.Config.VoiceOutputConfig.ReadConfig(ttsConfigPath);
-        string ttsModelName = "Default";
-        if (!string.IsNullOrEmpty(ttsConfig.TTSModelName))
+        try
         {
-            string modelPath = Path.Join(CommonConfig.VoiceModelRootPath, "VoiceOutput", "onnx",
-                ttsConfig.TTSModelName);
-            if (Directory.Exists(modelPath))
+            Runtime.PythonDLL = Path.Join(PythonRootPath, "python39.dll");
+            PythonEngine.Initialize();
+
+            ThreadState = PythonEngine.BeginAllowThreads();
+
+            var ttsConfigPath = Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/VoiceOutputConfig.json");
+
+            PardofelisCore.Config.VoiceOutputConfig ttsConfig =
+                PardofelisCore.Config.VoiceOutputConfig.ReadConfig(ttsConfigPath);
+            string ttsModelName = "Default";
+            if (!string.IsNullOrEmpty(ttsConfig.TTSModelName))
             {
-                if (File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_dec.onnx")) &&
-                    File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_dp.onnx")) &&
-                    File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_emb.onnx")) &&
-                    File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_enc_p.onnx")) &&
-                    File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_flow.onnx")) &&
-                    File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_sdp.onnx")))
+                string modelPath = Path.Join(CommonConfig.VoiceModelRootPath, "VoiceOutput", "onnx",
+                    ttsConfig.TTSModelName);
+                if (Directory.Exists(modelPath))
                 {
-                    ttsModelName = ttsConfig.TTSModelName;
+                    if (File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_dec.onnx")) &&
+                        File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_dp.onnx")) &&
+                        File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_emb.onnx")) &&
+                        File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_enc_p.onnx")) &&
+                        File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_flow.onnx")) &&
+                        File.Exists(Path.Join(modelPath, ttsConfig.TTSModelName + "_sdp.onnx")))
+                    {
+                        ttsModelName = ttsConfig.TTSModelName;
+                    }
                 }
             }
-        }
 
-        using (Py.GIL())
-        {
-            GlobalScope = Py.CreateScope();
-            GlobalScope.SetAttr("__file__",
-                new PyString(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py")));
-            GlobalScope.Set("__PathConfig_TTSModelName__", new PyString(ttsModelName));
-            foreach (var script in ScriptList)
+            using (Py.GIL())
             {
-                GlobalScope.Exec(script);
+                GlobalScope = Py.CreateScope();
+                GlobalScope.SetAttr("__file__",
+                    new PyString(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py")));
+                GlobalScope.Set("__PathConfig_TTSModelName__", new PyString(ttsModelName));
+                foreach (var script in ScriptList)
+                {
+                    GlobalScope.Exec(script);
+                }
+                //PyObject InferenceAudioFromTextFunction = GlobalScope.GetAttr("InferenceAudioFromText");
+                //PyObject[] arg = new PyObject[] { new PyString("你好！"), new PyInt(0), new PyFloat(1.0), new PyFloat(0.2), new PyFloat(0.33), new PyFloat(0.4) };
+                //PyObject result = InferenceAudioFromTextFunction.Invoke(arg);
+
+                //dynamic bytesIO = result;
+                //PyObject readMethod = bytesIO.GetAttr("read");
+                //PyObject bytes = readMethod.Invoke();
+                //var audioData = bytes.As<byte[]>();
+
+                //Task.Run(() => { PlayAudio(audioData); });
+
+                //System.IO.File.WriteAllBytes("output.wav", audioData);
             }
-            //PyObject InferenceAudioFromTextFunction = GlobalScope.GetAttr("InferenceAudioFromText");
-            //PyObject[] arg = new PyObject[] { new PyString("你好！"), new PyInt(0), new PyFloat(1.0), new PyFloat(0.2), new PyFloat(0.33), new PyFloat(0.4) };
-            //PyObject result = InferenceAudioFromTextFunction.Invoke(arg);
-
-            //dynamic bytesIO = result;
-            //PyObject readMethod = bytesIO.GetAttr("read");
-            //PyObject bytes = readMethod.Invoke();
-            //var audioData = bytes.As<byte[]>();
-
-            //Task.Run(() => { PlayAudio(audioData); });
-
-            //System.IO.File.WriteAllBytes("output.wav", audioData);
+            Log.Information("Python Thread Finished.");
+        }catch (Exception e)
+        {
+            Log.Error(e.Message);
         }
-
-        Log.Information("Python Thread Finished.");
     }
 
     public ResultWrap StartPythonEngine(CancellationTokenSource cancellationToken, List<string> scriptList)

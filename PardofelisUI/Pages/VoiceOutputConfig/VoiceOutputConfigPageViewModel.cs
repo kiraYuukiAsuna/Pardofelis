@@ -43,6 +43,11 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
         PardofelisCore.Config.VoiceOutputConfig ttsConfig =
             PardofelisCore.Config.VoiceOutputConfig.ReadConfig(TTSConfigPath);
 
+        if (!Path.Exists(Path.Join(CommonConfig.VoiceModelRootPath, "VoiceOutput", "onnx")))
+        {
+            return;
+        }
+        
         string modelPath = Path.Join(CommonConfig.VoiceModelRootPath, "VoiceOutput", "onnx");
         var modelFolders = Directory.GetDirectories(modelPath);
 
