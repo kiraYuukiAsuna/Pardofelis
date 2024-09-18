@@ -3,6 +3,7 @@ using Python.Runtime;
 using NAudio.Wave;
 using Serilog;
 using System.Runtime.Intrinsics.Arm;
+using PardofelisCore.Config;
 
 namespace PardofelisCore.VoiceOutput;
 
@@ -13,10 +14,16 @@ public class VoiceOutputController
     private CancellationTokenSource CurrentCancellationToken;
 
     private static readonly Mutex GilMutex = new Mutex();
+
+    PardofelisCore.Config.VoiceOutputConfig TTSConfig;
+
     public VoiceOutputController(PythonInstance pythonInstance)
     {
         PythonInstance = pythonInstance;
         CurrentCancellationToken = new CancellationTokenSource();
+
+        var ttsConfigPath = Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/VoiceOutputConfig.json");
+        TTSConfig = PardofelisCore.Config.VoiceOutputConfig.ReadConfig(ttsConfigPath);
     }
 
     private void PlayAudio(byte[] audioData, CancellationTokenSource cancellationToken)
@@ -86,7 +93,7 @@ public class VoiceOutputController
                             {
                                 break;
                             }
-                            PyObject[] arg = new PyObject[] { new PyString(text), new PyInt(0), new PyFloat(1.0), new PyFloat(0.2), new PyFloat(0.33), new PyFloat(0.4) };
+                            PyObject[] arg = new PyObject[] { new PyString(text), new PyInt(TTSConfig.Id), new PyFloat(TTSConfig.Length), new PyFloat(TTSConfig.SdpRatio), new PyFloat(TTSConfig.Noise), new PyFloat(TTSConfig.Noisew) };
 
                             var result = PythonInstance.InvokeMethod("InferenceAudioFromText", arg);
 

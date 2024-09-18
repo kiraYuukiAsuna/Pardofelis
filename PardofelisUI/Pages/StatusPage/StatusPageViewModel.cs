@@ -1001,7 +1001,7 @@ public partial class StatusPageViewModel : PageBase
                     "你好！",
                     executionSettings: new OpenAIPromptExecutionSettings()
                     {
-                        Temperature = 0.7f
+                        Temperature = 0.0f
                     },
                     kernel: SemanticKernel);
             }
@@ -1204,10 +1204,19 @@ public partial class StatusPageViewModel : PageBase
 
                 var process = new Process { StartInfo = processStartInfo };
 
-                if (!process.Start())
+                try
                 {
-                    Log.Error("Failed to start plugin: " + pluginName);
-                    ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定");
+                    if (!process.Start())
+                    {
+                        Log.Error("Failed to start plugin: " + pluginName);
+                        ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定").GetAwaiter().GetResult();
+                        continue;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e.Message);
+                    ShowMessageBox("启动插件 " + pluginName + " 失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult(); ;
                     continue;
                 }
 
