@@ -120,7 +120,8 @@ public class LlmModelService : ILlmModelService
 
         // _usedset = usedset;
         // _loadModelIndex = loadModelIndex;
-        // GlobalConfig.Instance.IsModelLoaded = true;
+        
+        GlobalConfig.Instance.IsModelLoaded = true;
     }
 
     /// 获取模型信息
