@@ -487,6 +487,9 @@ public partial class StatusPageViewModel : PageBase
             return;
         }
 
+        Log.Information("Start process llm message input.");
+        
+        Log.Information("Start vector search.");
         List<KeyValuePair<string, string>> vectorSearch = new();
         try
         {
@@ -499,6 +502,7 @@ public partial class StatusPageViewModel : PageBase
                 .GetAwaiter().GetResult();
         }
 
+        Log.Information("Start build system prompt.");
         string systemPrompt =
             $"下面我们要进行角色扮演，你的名字叫{m_CurrentCharacterPreset.Name}，你的人物设定内容是：\n{m_CurrentCharacterPreset.PresetContent}\n你正在对话的人的名字是{m_CurrentCharacterPreset.YourName} ，现在是{DateTime.Now.ToString()}，你之后回复的有关时间的文本要符合常识，例如今天是9月15日，那么9月14日就要用昨天代替.\n" +
             $"当前使用向量搜索获取到的你的历史相关记忆信息如下，格式是类似于 2024/9/8 3:31:35 说话人（爱莉），对话人：（希儿）：早上好啊！ 的格式，括号里的内容是名字，你需要根据你所知道的内容去判断是谁说的话，在后续回复中你只需要回复你想说的话，不用带上（{m_CurrentCharacterPreset.Name}）等类似的表明说话人的信息，" +
@@ -528,6 +532,7 @@ public partial class StatusPageViewModel : PageBase
 
         IChatCompletionService chatCompletionService = SemanticKernel.GetRequiredService<IChatCompletionService>();
 
+        Log.Information("Start invoke chat api.");
         Task<IReadOnlyList<ChatMessageContent>>? result = null;
         try
         {
