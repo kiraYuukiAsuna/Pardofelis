@@ -25,9 +25,9 @@ public class Rag
         {
             throw new ArgumentException("Collection or text cannot be null or empty.");
         }
-
-        var lines = TextChunker.SplitPlainTextLines(text, 128);
-        var paragraphs = TextChunker.SplitPlainTextParagraphs(lines, 1024);
+        var a = text.Length;
+        var lines = TextChunker.SplitPlainTextLines(text, 32);
+        var paragraphs = TextChunker.SplitPlainTextParagraphs(lines, 128);
 
         foreach (var para in paragraphs)
         {
@@ -41,10 +41,11 @@ public class Rag
         await RagSemaphore.WaitAsync();
         try
         {
-            var memoryResult = textMemory.SearchAsync(collection, text, 8, 0.7);
+            var memoryResult = textMemory.SearchAsync(collection, text, 16, 0.7);
             List<KeyValuePair<string, string>> results = new();
             await foreach (var item in memoryResult)
             {
+                Console.WriteLine($"Text: {item.Metadata.Text}, AdditionalMetadata: {item.Metadata.AdditionalMetadata}");
                 results.Add(new KeyValuePair<string, string>(item.Metadata.Text, item.Metadata.AdditionalMetadata));
             }
             return results;

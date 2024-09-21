@@ -490,10 +490,24 @@ public partial class StatusPageViewModel : PageBase
         Log.Information("Start process llm message input.");
         
         Log.Information("Start vector search.");
+        List<KeyValuePair<string, string>> lastlastvectorSearch = new();
+        List<KeyValuePair<string, string>> lastvectorSearch = new();
         List<KeyValuePair<string, string>> vectorSearch = new();
         try
         {
+            if(ChatMessages.Count >= 2)
+            {
+                var lastlastMessage = ChatMessages[ChatMessages.Count - 2].ToString();
+
+                var lastMessage = ChatMessages[ChatMessages.Count - 1].ToString();
+
+                lastlastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastlastMessage).GetAwaiter().GetResult();
+
+                lastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastMessage).GetAwaiter().GetResult();
+            }
+
             vectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", text).GetAwaiter().GetResult();
+
         }
         catch (Exception e)
         {
@@ -508,9 +522,17 @@ public partial class StatusPageViewModel : PageBase
             $"当前使用向量搜索获取到的你的历史相关记忆信息如下，格式是类似于 2024/9/8 3:31:35 说话人（爱莉），对话人：（希儿）：早上好啊！ 的格式，括号里的内容是名字，你需要根据你所知道的内容去判断是谁说的话，在后续回复中你只需要回复你想说的话，不用带上（{m_CurrentCharacterPreset.Name}）等类似的表明说话人的信息，" +
             $"当然如果人物设定中出现了让你将人物心情用括号括起来的要求你可以去遵守，注意所有的回复不要带表情：\n";
 
+        foreach (var message in lastlastvectorSearch)
+        {
+            systemPrompt += message.Value + message.Key + "\n";
+        }
+        foreach (var message in lastvectorSearch)
+        {
+            systemPrompt += message.Value + message.Key + "\n";
+        }
         foreach (var message in vectorSearch)
         {
-            systemPrompt += message;
+            systemPrompt += message.Value + message.Key + "\n";
         }
 
         systemPrompt +=
@@ -609,8 +631,6 @@ public partial class StatusPageViewModel : PageBase
             ? ("<" + m_CurrentCharacterPreset.Name + ">:")
             : "<(未知)>:";
         HistoryTextBlock += "\n" + assistantMessage + "\n\n";
-
-        Thread.Sleep(TimeSpan.FromSeconds(1));
 
         var chatContentAfter = ChatMessagesToChatMessage();
         File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"),
