@@ -100,7 +100,7 @@ public class ImageRecognitionPlugin
                 PluginConfig.ApiKey, "", "", new HttpClient()
                 {
                     BaseAddress = new Uri(PluginConfig.Url),
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Timeout = TimeSpan.FromMinutes(3)
                 });
             Kernel = builder.Build();
             ChatCompletionService = Kernel.GetRequiredService<IChatCompletionService>();

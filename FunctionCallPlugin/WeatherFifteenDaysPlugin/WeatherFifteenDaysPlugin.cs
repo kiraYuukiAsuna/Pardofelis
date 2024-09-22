@@ -77,7 +77,7 @@ public class WeatherFifteenDaysPlugin
     
     [KernelFunction]
     [Description("查询最近15天的天气，当对话中出现未来的规划时，需要考虑天气")]
-    public async Task<string> GetCurrentTemperature(
+    public async Task<string> GetFutureTemperature(
         Kernel kernel,
         [Description("请输入一个城市名称")] string inputCity
         )

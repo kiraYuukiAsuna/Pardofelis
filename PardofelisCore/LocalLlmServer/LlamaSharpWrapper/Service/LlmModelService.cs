@@ -568,7 +568,7 @@ public class LlmModelService : ILlmModelService
         {
             data = embeddings.Select((x, index) => new EmbeddingObject
             {
-                embedding = x,
+                embedding = System.Convert.ToBase64String(x.SelectMany(BitConverter.GetBytes).ToArray()),
                 index = index
             }).ToArray(),
             model = request.model

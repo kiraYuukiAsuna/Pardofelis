@@ -78,8 +78,8 @@ public class WeatherOneDayPlugin
     }
     
     [KernelFunction]
-    [Description("查询今天的天气。")]
-    public async Task<string> GetCurrentTemperature(
+    [Description("查询今天的天气")]
+    public async Task<string> GetTodayTemperature(
         Kernel kernel,
         [Description("请输入一个城市名称")] string inputCity
         )

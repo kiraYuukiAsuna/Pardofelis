@@ -45,7 +45,7 @@ thread.Start();
 var memoryBuilder = new MemoryBuilder();
 memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "", new HttpClient()
 {
-    BaseAddress = new Uri("http://127.0.0.1:14251/v1/embeddings")
+    BaseAddress = new Uri("http://127.0.0.1:14251/v1")
 });
 
 IMemoryStore memoryStore = await SqliteMemoryStore.ConnectAsync(Path.Join("E:/", "MemStore.db"));

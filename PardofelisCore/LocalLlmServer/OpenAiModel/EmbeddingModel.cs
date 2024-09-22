@@ -72,7 +72,7 @@ public class EmbeddingObject
     /// <summary>
     /// 嵌入向量，是浮点数列表。向量的长度取决于模型，如嵌入指南中所列。
     /// </summary>
-    public float[] embedding { get; set; }
+    public string embedding { get; set; }
 
     /// <summary>
     /// 对象类型，始终为"embedding"。

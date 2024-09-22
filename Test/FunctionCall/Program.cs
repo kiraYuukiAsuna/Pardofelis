@@ -176,7 +176,7 @@ builder.AddOpenAIChatCompletion("gpt-4o",
 builder.AddOpenAIChatCompletion("gpt-4o-mini",
 "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
 {
-    BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions")
+    BaseAddress = new Uri("https://chatapi.nloli.xyz/v1")
 });
 // builder.AddOpenAIChatCompletion("qwen-plus",
 //     "sk-41705ee9bcb7418b881e978943f29b03", "", "", new HttpClient()
@@ -194,7 +194,7 @@ var kernel = builder.Build();
 // var memoryBuilder = new MemoryBuilder();
 // memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "", new HttpClient()
 // {
-//     BaseAddress = new Uri("http://127.0.0.1:14251/v1/embeddings")
+//     BaseAddress = new Uri("http://127.0.0.1:14251/v1")
 // });
 // IMemoryStore memoryStore = await SqliteMemoryStore.ConnectAsync("memstore.db");
 // memoryBuilder.WithMemoryStore(memoryStore);

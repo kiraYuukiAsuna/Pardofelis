@@ -847,7 +847,7 @@ public partial class StatusPageViewModel : PageBase
             var memoryBuilder = new MemoryBuilder();
             memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "org id", new HttpClient()
             {
-                BaseAddress = new Uri("http://127.0.0.1:14251/v1/embeddings")
+                BaseAddress = new Uri("http://127.0.0.1:14251/v1")
             });
 
             IMemoryStore memoryStore =
@@ -996,7 +996,7 @@ public partial class StatusPageViewModel : PageBase
                     builder.AddOpenAIChatCompletion("gpt-4o-mini",
                         "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
                         {
-                            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions"),
+                            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1"),
                             Timeout = TimeSpan.FromMinutes(3)
                         });
                 }
