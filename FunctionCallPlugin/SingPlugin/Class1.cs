@@ -59,7 +59,8 @@ public partial class Config : ObservableObject
 
     public static void WriteConfig(Config config)
     {
-        var configFilePath = Path.Join(CurrentPluginWorkingDirectory, "Config.json");
+        var pluginConfigFolder = Path.Join(CurrentPardofelisAppDataPath, "PluginConfig", ThisAssembly.AssemblyName);
+        var configFilePath = Path.Join(pluginConfigFolder, "Config.json");
         var settings = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented
