@@ -28,7 +28,7 @@ public class VoiceInputController
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(TimeSpan.FromSeconds(1));
         }
 
         PortAudio.Terminate();

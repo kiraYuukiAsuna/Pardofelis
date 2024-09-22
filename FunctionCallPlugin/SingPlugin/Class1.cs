@@ -114,11 +114,6 @@ public class SingPlugin
         }
     }
 
-    ~SingPlugin()
-    {
-        StopSong();
-    }
-
     [KernelFunction]
     [Description("开始唱歌，切换歌曲")]
     public async Task<string> StartSingAsync(

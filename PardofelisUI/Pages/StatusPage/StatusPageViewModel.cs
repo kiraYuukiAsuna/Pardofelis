@@ -404,7 +404,6 @@ public partial class StatusPageViewModel : PageBase
 
     private void StopMessageProcessing()
     {
-        _messageQueue.CompleteAdding();
         _messageProcessingThread.Join();
     }
 
@@ -884,7 +883,7 @@ public partial class StatusPageViewModel : PageBase
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             HttpClient client = new();
-            client.Timeout = TimeSpan.FromMinutes(5);
+            client.Timeout = TimeSpan.FromMinutes(3);
             var response = await client.PostAsync("http://127.0.0.1:14251/v1/embeddings", content);
 
             if (response.IsSuccessStatusCode)
@@ -998,7 +997,7 @@ public partial class StatusPageViewModel : PageBase
                         "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
                         {
                             BaseAddress = new Uri("https://chatapi.nloli.xyz/v1/chat/completions"),
-                            Timeout = TimeSpan.FromSeconds(30)
+                            Timeout = TimeSpan.FromMinutes(3)
                         });
                 }
                 else
@@ -1007,7 +1006,7 @@ public partial class StatusPageViewModel : PageBase
                         m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
                         {
                             BaseAddress = new Uri(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelUrl),
-                            Timeout = TimeSpan.FromSeconds(30)
+                            Timeout = TimeSpan.FromMinutes(3)
                         });
                 }
             }

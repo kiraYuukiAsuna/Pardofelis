@@ -85,10 +85,29 @@ public class ImageRecognitionPlugin
 {
     public Config PluginConfig = new Config();
 
+    private Kernel Kernel;
+    private IChatCompletionService ChatCompletionService;
+    
     public ImageRecognitionPlugin()
     {
         PluginConfig.Init();
         PluginConfig = Config.ReadConfig();
+
+        try
+        {
+            var builder = Kernel.CreateBuilder();
+            builder.AddOpenAIChatCompletion(PluginConfig.ModelName,
+                PluginConfig.ApiKey, "", "", new HttpClient()
+                {
+                    BaseAddress = new Uri(PluginConfig.Url),
+                    Timeout = TimeSpan.FromSeconds(30)
+                });
+            Kernel = builder.Build();
+            ChatCompletionService = Kernel.GetRequiredService<IChatCompletionService>();
+        }catch(Exception e)
+        {
+            Config.CurLogger.Error("Error when creating kernel: " + e.Message);
+        }
     }
 
     [KernelFunction]
@@ -170,7 +189,9 @@ public class ImageRecognitionPlugin
             BitBlt(hMemoryDC, 0, 0, screenWidth, screenHeight, hScreenDC, 0, 0, SRCCOPY);
 
             Bitmap bmp = Image.FromHbitmap(hBitmap);
+            
             // bmp.Save("screenshot.png", ImageFormat.Png);
+            // Config.CurLogger.Information("Screenshot saved as screenshot.png");
 
             // 清理资源
             SelectObject(hMemoryDC, hOldBitmap);
@@ -178,52 +199,40 @@ public class ImageRecognitionPlugin
             DeleteDC(hMemoryDC);
             ReleaseDC(hWnd, hScreenDC);
 
-            Config.CurLogger.Information("Screenshot saved as screenshot.png");
-
             ChatHistory chatMessages = new ChatHistory();
             var systemPrompt = "识别并分析图像内容，给出详细的描述信息，以便能够作为上下文供AI助手进行回答。";
 
             chatMessages.AddMessage(AuthorRole.User, new ChatMessageContentItemCollection()
             {
-                new TextContent("识别并分析图像内容，给出详细的描述信息，以便能够作为上下文供AI助手进行回答。"),
+                new TextContent(systemPrompt),
                 new ImageContent(ConvertBitmapToReadOnlyMemory(bmp), mimeType: "image/png")
             });
 
             if (string.IsNullOrEmpty(PluginConfig.ModelName))
             {
-                return "请先配置支持图像的在线大模型名称！";
+                return "识别图像内容失败！请先配置支持图像的在线大模型名称！";
             }
 
             if (string.IsNullOrEmpty(PluginConfig.Url))
             {
-                return "请先配置支持图像的在线大模型请求地址！";
+                return "识别图像内容失败！请先配置支持图像的在线大模型请求地址！";
             }
 
             if (string.IsNullOrEmpty(PluginConfig.ApiKey))
             {
-                return "请先配置支持图像的在线大模型密钥！";
+                return "识别图像内容失败！请先配置支持图像的在线大模型密钥！";
             }
-
-            var builder = Kernel.CreateBuilder();
-            builder.AddOpenAIChatCompletion(PluginConfig.ModelName,
-                PluginConfig.ApiKey, "", "", new HttpClient()
-                {
-                    BaseAddress = new Uri(PluginConfig.Url),
-                    Timeout = TimeSpan.FromSeconds(30)
-                });
-            var kernel = builder.Build();
-            IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-
+            
             OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
             {
                 ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-                //ChatSystemPrompt = systemPrompt,
+                ChatSystemPrompt = systemPrompt,
                 Temperature = 0.0f
             };
-            var result = chatCompletionService.GetChatMessageContentsAsync(
+            var result = ChatCompletionService.GetChatMessageContentsAsync(
                 chatMessages,
                 executionSettings: openAIPromptExecutionSettings,
-                kernel: kernel);
+                kernel: Kernel);
 
             Config.CurLogger.Information("Assistant > ");
             var assistantMessage = result.Result.FirstOrDefault()?.Content;

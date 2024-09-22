@@ -26,8 +26,8 @@ public class Rag
             throw new ArgumentException("Collection or text cannot be null or empty.");
         }
         var a = text.Length;
-        var lines = TextChunker.SplitPlainTextLines(text, 32);
-        var paragraphs = TextChunker.SplitPlainTextParagraphs(lines, 128);
+        var lines = TextChunker.SplitPlainTextLines(text, 16);
+        var paragraphs = TextChunker.SplitPlainTextParagraphs(lines, 64);
 
         foreach (var para in paragraphs)
         {
