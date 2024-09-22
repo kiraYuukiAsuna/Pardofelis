@@ -12,33 +12,35 @@ namespace SingPlugin;
 public partial class Config : ObservableObject
 {
     public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
-
+    public static string CurrentPardofelisAppDataPath = CurrentPluginWorkingDirectory;
+    public static ILogger CurLogger;
+    
     [ObservableProperty]
     [JsonProperty("SongDirectory")]
-    public string _songDirectory = @"E:/Music";
+    public string _songDirectory = Path.Join(CurrentPardofelisAppDataPath, "Music");
 
     public void Init()
     {
-        var logFileFolder = Path.Join(CurrentPluginWorkingDirectory, "Log");
+        var logFileFolder = Path.Join(Config.CurrentPardofelisAppDataPath, "PluginLog", ThisAssembly.AssemblyName);
         if (!Directory.Exists(logFileFolder))
         {
-            Log.Information("Log file folder not found. Creating a new one.");
             Directory.CreateDirectory(logFileFolder);
         }
-
-        Log.Logger = new LoggerConfiguration()
+        
+        CurLogger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File(Path.Join(logFileFolder, "PluginLog.txt"), rollingInterval: RollingInterval.Day)
+            .WriteTo.File(Path.Join(logFileFolder, "Log_" +  ThisAssembly.AssemblyName  + ".txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
     }
 
     public static Config ReadConfig()
     {
-        var configFilePath = Path.Join(CurrentPluginWorkingDirectory, "Config.json");
+        var pluginConfigFolder = Path.Join(CurrentPardofelisAppDataPath, "PluginConfig", ThisAssembly.AssemblyName);
+        var configFilePath = Path.Join(pluginConfigFolder, "Config.json");
         if (!File.Exists(configFilePath))
         {
             Directory.CreateDirectory(Path.GetDirectoryName(configFilePath));
-            Log.Information("Config file not found. Creating a new one.");
+            Config.CurLogger.Information("Config file not found. Creating a new one.");
             var newConfig = new Config();
             var settings = new JsonSerializerSettings
             {
@@ -50,7 +52,7 @@ public partial class Config : ObservableObject
         }
 
         var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configFilePath));
-        Log.Information("Read config info: {@ConfigManager}", config);
+        Config.CurLogger.Information("Read config info: {@ConfigManager}", config);
 
         return config != null ? config : new Config();
     }
@@ -64,7 +66,7 @@ public partial class Config : ObservableObject
         };
         var json = JsonConvert.SerializeObject(config, settings);
         File.WriteAllText(configFilePath, json);
-        Log.Information("Write config info to file: {@ConfigManager}", config);
+        Config.CurLogger.Information("Write config info to file: {@ConfigManager}", config);
     }
 }
 
@@ -88,7 +90,7 @@ public class SingPlugin
 
         if(Directory.Exists(folderPath))
         {
-            Log.Information("歌曲文件夹路径：{folderPath}", folderPath);
+            Config.CurLogger.Information("歌曲文件夹路径：{folderPath}", folderPath);
             // 读取文件夹中所有.wav文件
             string[] files = Directory.GetFiles(folderPath, "*.wav");
 
@@ -136,12 +138,12 @@ public class SingPlugin
             string songPath = Songs[songName];
             PlaySong(songPath);
             currentSongName = songName;
-            Log.Information("歌曲开始播放：{songName}", songName);
+            Config.CurLogger.Information("歌曲开始播放：{songName}", songName);
             return "歌曲开始播放捏~";
         }
         else
         {
-            Log.Information("未找到该歌曲：{songName}", songName);
+            Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
             var message = "未找到该歌曲。已有歌曲列表为：";
             foreach (var song in Songs.Keys)
             {
@@ -160,12 +162,12 @@ public class SingPlugin
         if (isPlaying)
         {
             StopSong();
-            Log.Information("歌曲停止播放：{currentSongName}", currentSongName);
+            Config.CurLogger.Information("歌曲停止播放：{currentSongName}", currentSongName);
             return "歌曲停止播放了捏~";
         }
         else
         {
-            Log.Information("当前没有正在播放的歌曲。");
+            Config.CurLogger.Information("当前没有正在播放的歌曲。");
             return "当前没有正在播放的歌曲。";
         }
     }
@@ -177,7 +179,7 @@ public class SingPlugin
         player.Load();  // 加载音频文件
         player.Play();  // 播放音频文件
         isPlaying = true;
-        Console.WriteLine($"正在播放：{currentSongName}");
+        Config.CurLogger.Information($"正在播放：{currentSongName}");
     }
 
     // 停止歌曲的方法
@@ -187,12 +189,12 @@ public class SingPlugin
         {
             player.Stop();  // 停止播放
             isPlaying = false;
-            Console.WriteLine($"已停止播放：{currentSongName}");
+            Config.CurLogger.Information($"已停止播放：{currentSongName}");
             currentSongName = "";  // 清空当前播放的歌曲名称
         }
         else
         {
-            Console.WriteLine("当前没有正在播放的歌曲。");
+            Config.CurLogger.Information("当前没有正在播放的歌曲。");
         }
     }
 

@@ -1,5 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
+using PardofelisCore.Config;
+using PardofelisCore.Logger;
 using PardofelisUI.Pages.StatusPage;
 using Serilog;
 using SukiUI.Controls;
@@ -33,8 +35,17 @@ public partial class MainWindow : SukiWindow
                 .TryShow();
             return;
         }
-        
-        PardofelisAppDataPrefixChecker.Check();
+
+        if (PardofelisAppDataPrefixChecker.Check())
+        {
+            GlobalLogger.Initialize(CommonConfig.LogRootPath);
+            GlobalConfig.Instance = GlobalConfig.ReadConfig();
+        }
+        else
+        {
+            GlobalLogger.Initialize(CommonConfig.CurrentWorkingDirectory);
+            GlobalConfig.Instance = GlobalConfig.ReadConfig();
+        }
         
         model.LoadPages();
 

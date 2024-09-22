@@ -2,9 +2,7 @@
 using System.ComponentModel;
 using MimeKit;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Serilog;
 
 namespace EmailPlugin;
@@ -13,6 +11,8 @@ namespace EmailPlugin;
 public partial class Config : ObservableObject
 {
     public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+    public static string CurrentPardofelisAppDataPath = CurrentPluginWorkingDirectory;
+    public static ILogger CurLogger;
 
     [ObservableProperty] [JsonProperty("SmtpServer")]
     public string _smtpServer = "smtp.qq.com";
@@ -32,26 +32,26 @@ public partial class Config : ObservableObject
 
     public void Init()
     {
-        var logFileFolder = Path.Join(CurrentPluginWorkingDirectory, "Log");
+        var logFileFolder = Path.Join(Config.CurrentPardofelisAppDataPath, "PluginLog", ThisAssembly.AssemblyName);
         if (!Directory.Exists(logFileFolder))
         {
-            Log.Information("Log file folder not found. Creating a new one.");
             Directory.CreateDirectory(logFileFolder);
         }
-
-        Log.Logger = new LoggerConfiguration()
+        
+        CurLogger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File(Path.Join(logFileFolder, "PluginLog.txt"), rollingInterval: RollingInterval.Day)
+            .WriteTo.File(Path.Join(logFileFolder, "Log_" +  ThisAssembly.AssemblyName  + ".txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
     }
 
     public static Config ReadConfig()
     {
-        var configFilePath = Path.Join(CurrentPluginWorkingDirectory, "Config.json");
+        var pluginConfigFolder = Path.Join(CurrentPardofelisAppDataPath, "PluginConfig", ThisAssembly.AssemblyName);
+        var configFilePath = Path.Join(pluginConfigFolder, "Config.json");
         if (!File.Exists(configFilePath))
         {
             Directory.CreateDirectory(Path.GetDirectoryName(configFilePath));
-            Log.Information("Config file not found. Creating a new one.");
+            Config.CurLogger.Information("Config file not found. Creating a new one.");
             var newConfig = new Config();
             var settings = new JsonSerializerSettings
             {
@@ -63,7 +63,7 @@ public partial class Config : ObservableObject
         }
 
         var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configFilePath));
-        Log.Information("Read config info: {@ConfigManager}", config);
+        Config.CurLogger.Information("Read config info: {@ConfigManager}", config);
 
         return config != null ? config : new Config();
     }
@@ -77,14 +77,14 @@ public partial class Config : ObservableObject
         };
         var json = JsonConvert.SerializeObject(config, settings);
         File.WriteAllText(configFilePath, json);
-        Log.Information("Write config info to file: {@ConfigManager}", config);
+        Config.CurLogger.Information("Write config info to file: {@ConfigManager}", config);
     }
 }
 
 public class EmailPlugin
 {
     public Config PluginConfig = new Config();
-
+    
     public EmailPlugin()
     {
         PluginConfig.Init();
@@ -100,9 +100,9 @@ public class EmailPlugin
         string body
     )
     {
-        Console.WriteLine($"向 {recipientEmails} 发送电子邮件：");
-        Console.WriteLine($"主题：{subject}");
-        Console.WriteLine($"正文：{body}");
+        Config.CurLogger.Information($"向 {recipientEmails} 发送电子邮件：");
+        Config.CurLogger.Information($"主题：{subject}");
+        Config.CurLogger.Information($"正文：{body}");
         // 添加使用收件人电子邮件、主题和正文发送电子邮件的逻辑
 
         string result = "";
@@ -112,7 +112,7 @@ public class EmailPlugin
             var emailSender = new EmailSender(PluginConfig.SmtpServer, PluginConfig.SmtpPort, PluginConfig.SmtpUser,
                 PluginConfig.SmtpPass);
             result = await emailSender.SendEmailAsync(email, subject, body);
-            Console.WriteLine("电子邮件已发送！");
+            Config.CurLogger.Information("电子邮件已发送！");
         }
 
         return "发送电子邮件成功，发送给了 " + recipientEmails + "。" + result;

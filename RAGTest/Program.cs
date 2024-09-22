@@ -69,7 +69,7 @@ var TextMemory = memoryBuilder.Build();
 //int curIdx = 0;
 //foreach (var para in paragraphs)
 //{
-//    Console.WriteLine(curIdx/paragraphs.Count);
+//    Console.WriteLine((float)curIdx/paragraphs.Count);
 //    await TextMemory.SaveInformationAsync(collection, para, Guid.NewGuid().ToString(), additionalMetadata: additionalMetadata,
 //                cancellationToken: default);
 //    curIdx++;

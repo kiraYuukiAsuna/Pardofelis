@@ -1,23 +1,81 @@
 ﻿using System.ComponentModel;
-using System.Xml;
 using Microsoft.SemanticKernel;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using HtmlAgilityPack;
+using Newtonsoft.Json;
+using Serilog;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace WeatherOneDayPlugin;
 
-public class Config
+[JsonObject(Newtonsoft.Json.MemberSerialization.OptIn)]
+public partial class Config : ObservableObject
 {
     public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
+    public static string CurrentPardofelisAppDataPath = CurrentPluginWorkingDirectory;
+    public static ILogger CurLogger;
+    
+    public void Init()
+    {
+        var logFileFolder = Path.Join(Config.CurrentPardofelisAppDataPath, "PluginLog", ThisAssembly.AssemblyName);
+        if (!Directory.Exists(logFileFolder))
+        {
+            Directory.CreateDirectory(logFileFolder);
+        }
+        
+        CurLogger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .WriteTo.File(Path.Join(logFileFolder, "Log_" +  ThisAssembly.AssemblyName  + ".txt"), rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+    }
+
+    public static Config ReadConfig()
+    {
+        var pluginConfigFolder = Path.Join(CurrentPardofelisAppDataPath, "PluginConfig", ThisAssembly.AssemblyName);
+        var configFilePath = Path.Join(pluginConfigFolder, "Config.json");
+        if (!File.Exists(configFilePath))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(configFilePath));
+            Config.CurLogger.Information("Config file not found. Creating a new one.");
+            var newConfig = new Config();
+            var settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented
+            };
+            var json = JsonConvert.SerializeObject(newConfig, settings);
+            File.WriteAllText(configFilePath, json);
+            return newConfig;
+        }
+
+        var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configFilePath));
+        Config.CurLogger.Information("Read config info: {@ConfigManager}", config);
+
+        return config != null ? config : new Config();
+    }
+
+    public static void WriteConfig(Config config)
+    {
+        var configFilePath = Path.Join(CurrentPluginWorkingDirectory, "Config.json");
+        var settings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented
+        };
+        var json = JsonConvert.SerializeObject(config, settings);
+        File.WriteAllText(configFilePath, json);
+        Config.CurLogger.Information("Write config info to file: {@ConfigManager}", config);
+    }
 }
 
 public class WeatherOneDayPlugin
 {
+    public Config PluginConfig = new Config();
+    
+    public WeatherOneDayPlugin()
+    {
+        PluginConfig.Init();
+        PluginConfig = Config.ReadConfig();
+    }
+    
     [KernelFunction]
     [Description("查询今天的天气。")]
     public async Task<string> GetCurrentTemperature(
@@ -43,7 +101,7 @@ public class WeatherOneDayPlugin
         // 查找城市对应的网址
         if (cityUrlMap.TryGetValue(inputCity, out string cityUrl))
         {
-            Console.WriteLine($"城市: {inputCity} 对应的网址是: {cityUrl}");
+            Config.CurLogger.Information($"城市: {inputCity} 对应的网址是: {cityUrl}");
 
             // 进入爬虫部分
             string weatherData = ScrapeWeatherData(cityUrl);
@@ -53,7 +111,7 @@ public class WeatherOneDayPlugin
         }
         else
         {
-            Console.WriteLine("未找到对应的城市。");
+            Config.CurLogger.Information("未找到对应的城市。");
             return "未找到对应的城市。";
 
         }

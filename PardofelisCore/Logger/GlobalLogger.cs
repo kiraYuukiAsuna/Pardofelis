@@ -5,11 +5,11 @@ namespace PardofelisCore.Logger;
 
 public class GlobalLogger
 {
-    public static void Initialize()
+    public static void Initialize(string mainLogRootPath)
     {
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File(Path.Join(CommonConfig.LogRootPath, "PardofelisCore.txt"), rollingInterval: RollingInterval.Day)
+            .WriteTo.File(Path.Join(mainLogRootPath, "PardofelisCore.txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
     }
 }

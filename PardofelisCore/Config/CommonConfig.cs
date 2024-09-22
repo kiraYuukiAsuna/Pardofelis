@@ -16,7 +16,7 @@ public static class CommonConfig
     public static string ConfigRootPath = "";
     public static string EmbeddingModelRootPath = "";
     public static string LocalLlmModelRootPath = "";
-    public static string LogRootPath = "";
+    public static string LogRootPath = CurrentWorkingDirectory;
     public static string MemoryRootPath = "";
     public static string PluginRootPath = "";
     public static string PythonRootPath = "";

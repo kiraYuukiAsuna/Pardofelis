@@ -17,9 +17,6 @@ public static class InvokeMethod
 
     public static void Run()
     {
-        GlobalLogger.Initialize();
-        GlobalConfig.Instance = GlobalConfig.ReadConfig();
-        
         var builder = WebApplication.CreateBuilder();
 
         builder.Services.AddControllers();

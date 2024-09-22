@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using PardofelisCore.Config;
 using Serilog;
 
 namespace PardofelisCore.Util;
@@ -96,17 +97,30 @@ public class FunctionCallPluginLoader
                     PluginConfigs.Add(new PluginConfigInfo(plugin.PluginFile, plugin.Assembly, type));
                     
                     foundConfig = true;
-                    FieldInfo fieldInfo = type.GetField("CurrentPluginWorkingDirectory", BindingFlags.Static | BindingFlags.Public);
-                    if (fieldInfo != null)
+                    FieldInfo fieldInfoCurrentPluginWorkingDirectory = type.GetField("CurrentPluginWorkingDirectory", BindingFlags.Static | BindingFlags.Public);
+                    if (fieldInfoCurrentPluginWorkingDirectory != null)
                     {
-                        fieldInfo.SetValue(null, Path.GetDirectoryName(plugin.PluginFile));
+                        fieldInfoCurrentPluginWorkingDirectory.SetValue(null, Path.GetDirectoryName(plugin.PluginFile));
 
-                        string currentValue = (string)fieldInfo.GetValue(null);
+                        string currentValue = (string)fieldInfoCurrentPluginWorkingDirectory.GetValue(null);
                         Log.Information("CurrentPluginWorkingDirectory Field found and set to: " + currentValue);
                     }
                     else
                     {
                         Log.Information("CurrentPluginWorkingDirectory Field not found.");
+                    }
+                    
+                    FieldInfo fieldInfoCurrentPardofelisAppDataPath = type.GetField("CurrentPardofelisAppDataPath", BindingFlags.Static | BindingFlags.Public);
+                    if (fieldInfoCurrentPardofelisAppDataPath != null)
+                    {
+                        fieldInfoCurrentPardofelisAppDataPath.SetValue(null, CommonConfig.PardofelisAppDataPath);
+
+                        string currentValue = (string)fieldInfoCurrentPardofelisAppDataPath.GetValue(null);
+                        Log.Information("CurrentPardofelisAppDataPath Field found and set to: " + currentValue);
+                    }
+                    else
+                    {
+                        Log.Information("CurrentPardofelisAppDataPath Field not found.");
                     }
                 }
             }

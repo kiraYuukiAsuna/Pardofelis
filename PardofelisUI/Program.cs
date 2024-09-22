@@ -3,8 +3,6 @@ using ShowMeTheXaml;
 using System;
 using Avalonia.Dialogs;
 using Serilog;
-using System.IO;
-using PardofelisCore.Config;
 
 namespace PardofelisUI;
 
@@ -23,8 +21,7 @@ class Program
         }
         catch (Exception e)
         {
-            Log.Fatal(e, "An unhandled exception occurred." +
-                         "Please report this error to the developers.");
+            Log.Fatal(e, "An unhandled exception occurred. Please report this error to the developers.");
         }
         finally
         {
@@ -36,11 +33,6 @@ class Program
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
-        Log.Logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .WriteTo.File(Path.Join(CommonConfig.LogRootPath, "Application.txt"), rollingInterval: RollingInterval.Day)
-            .CreateLogger();
-
         var app = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .LogToTrace()
