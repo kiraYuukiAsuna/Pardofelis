@@ -22,11 +22,18 @@ namespace PardofelisCore.Util
         OnVoiceOutput
     }
 
+    public enum ExecutorName
+    {
+        None,
+        StatusPage,
+        VoiceOuput
+    }
+    
     public class GlobalStatus
     {
         public static RunningStatus CurrentRunningStatus = RunningStatus.Stopped;
         public static SystemStatus CurrentStatus = SystemStatus.Idle;
-
+        public static ExecutorName CurrentExecutor = ExecutorName.None;
 
 
     }

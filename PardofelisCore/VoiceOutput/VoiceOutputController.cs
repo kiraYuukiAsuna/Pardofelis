@@ -53,7 +53,7 @@ public class VoiceOutputController
         }
     }
 
-    public void Speak(string text)
+    public void Speak(string text, bool saveAudioFile=false, string savePath="")
     {
         try
         {
@@ -116,6 +116,11 @@ public class VoiceOutputController
                     finally
                     {
                         GilMutex.ReleaseMutex();
+                    }
+
+                    if (saveAudioFile)
+                    {
+                        File.WriteAllBytes(savePath + $"_{index}.wav", audioData);
                     }
 
                     Task.Run(() =>

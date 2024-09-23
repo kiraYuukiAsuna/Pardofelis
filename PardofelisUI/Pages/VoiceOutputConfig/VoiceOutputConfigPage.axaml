@@ -92,6 +92,39 @@
                             Command="{Binding SaveConfigCommand}"
                             Content="保存配置" />
                 </Panel>
+                <ToolTip>生成音频</ToolTip>
+                <TextBlock Margin="0,0,0,0" HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Text="输入文字后点击生成音频按钮，音频讲输出在{PardofelisAppData}/TTSAudio文件夹下，文件名为下面输入的名称:" />
+                <Button Margin="15,0,0,0"
+                        VerticalAlignment="Top" HorizontalAlignment="Center"
+                        IsEnabled="{Binding !RunCodeProtection}"
+                        Command="{Binding RunCommand}"
+                        Content="{Binding RunButtonText}" />
+                <Panel>
+                    <TextBlock Margin="0,0,0,0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               FontWeight="Bold"
+                               Text="音频文件名：" />
+                    <TextBox Width="700" Height="60" HorizontalAlignment="Center"
+                             Text="{Binding AudioName}" />
+                </Panel>
+                <Panel>
+                    <TextBlock Margin="0,0,0,0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               FontWeight="Bold"
+                               Text="文本内容：" />
+                    <TextBox Width="700" Height="600" HorizontalAlignment="Center"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             Text="{Binding Text}" />
+                </Panel>
+                <Button Margin="15,0,0,0"
+                        VerticalAlignment="Top" HorizontalAlignment="Center"
+                        IsEnabled="{Binding RunningState}"
+                        Command="{Binding GenerateAudioFileCommand}"
+                        Content="生成音频" />
             </StackPanel>
         </controls:GlassCard>
     </ScrollViewer>

@@ -38,7 +38,6 @@ using PardofelisCore.Api;
 using PardofelisUI.Utilities;
 using ReactiveUI;
 using SukiUI.Dialogs;
-using SukiUI.Toasts;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -160,6 +159,8 @@ public partial class StatusPageViewModel : PageBase
 
 
     [ObservableProperty] private bool _runningState;
+    [ObservableProperty] private bool _runCodeProtection;
+
     ModelParameterConfig m_CurrentModelParameter;
     CharacterPreset m_CurrentCharacterPreset;
 
@@ -364,9 +365,7 @@ public partial class StatusPageViewModel : PageBase
     }
 
     private CancellationTokenSource CurrentCancellationToken;
-
-    [ObservableProperty] private bool _runCodeProtection;
-
+    
     private Thread idleAskThread;
 
     private List<Process> pluginInstances = new();
@@ -404,6 +403,10 @@ public partial class StatusPageViewModel : PageBase
 
     private void StopMessageProcessing()
     {
+        if (_messageQueue != null && !_messageQueue.IsAddingCompleted)
+        {
+            _messageQueue.CompleteAdding();
+        }
         _messageProcessingThread.Join();
     }
 
@@ -511,7 +514,7 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            ShowMessageBox("查询向量数据库失败! 错误信息：" + e.Message, "确定")
+            MessageBoxUtil.ShowMessageBox("查询向量数据库失败! 错误信息：" + e.Message, "确定")
                 .GetAwaiter().GetResult();
         }
 
@@ -565,7 +568,7 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            ShowMessageBox("请求大模型数据失败! 错误信息：" + e.Message, "确定")
+            MessageBoxUtil.ShowMessageBox("请求大模型数据失败! 错误信息：" + e.Message, "确定")
                 .GetAwaiter().GetResult();
         }
 
@@ -589,7 +592,7 @@ public partial class StatusPageViewModel : PageBase
             {
                 Log.Error(e.Message);
                 errorMessage = e.Message;
-                ShowMessageBox("请求大模型数据失败! 错误信息：" + e.Message, "确定")
+                MessageBoxUtil.ShowMessageBox("请求大模型数据失败! 错误信息：" + e.Message, "确定")
                     .GetAwaiter().GetResult();
             }
         }
@@ -642,7 +645,7 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            ShowMessageBox("TTS语音输出失败! 错误信息：" + e.Message, "确定")
+            MessageBoxUtil.ShowMessageBox("TTS语音输出失败! 错误信息：" + e.Message, "确定")
                 .GetAwaiter().GetResult();
         }
 
@@ -658,6 +661,16 @@ public partial class StatusPageViewModel : PageBase
     [RelayCommand]
     private void Run()
     {
+        if (GlobalStatus.CurrentRunningStatus == RunningStatus.Running && GlobalStatus.CurrentExecutor != ExecutorName.StatusPage)
+        {
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("请先停止语音输出页面的生成音频服务!")
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
+            return;
+        }
+        
         if (RunningState)
         {
             Thread stopThread = new Thread(async () =>
@@ -683,6 +696,7 @@ public partial class StatusPageViewModel : PageBase
                 // change status
                 GlobalStatus.CurrentRunningStatus = RunningStatus.Stopped;
                 GlobalStatus.CurrentStatus = SystemStatus.Idle;
+                GlobalStatus.CurrentExecutor = ExecutorName.None;
 
                 // clear resources
                 SemanticTextMemory = null;
@@ -708,7 +722,7 @@ public partial class StatusPageViewModel : PageBase
                 StepperIndex = 0;
                 Steps = new AvaloniaList<string>();
 
-                ShowToast("停止成功!", "停止成功!", NotificationType.Success);
+                MessageBoxUtil.ShowToast("停止成功!", "停止成功!", NotificationType.Success);
 
                 // change running state
                 RunningState = false;
@@ -894,7 +908,7 @@ public partial class StatusPageViewModel : PageBase
             else
             {
                 Log.Information($"TestEmbeddingRequest Error: {response.StatusCode}");
-                ShowMessageBox("加载Embedding模型失败! 错误信息：" + response.StatusCode.ToString() + "\n" + response.Content,
+                MessageBoxUtil.ShowMessageBox("加载Embedding模型失败! 错误信息：" + response.StatusCode.ToString() + "\n" + response.Content,
                     "确定").GetAwaiter().GetResult();
             }
 
@@ -909,7 +923,7 @@ public partial class StatusPageViewModel : PageBase
             catch (Exception e)
             {
                 Log.Error(e.Message);
-                ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
+                MessageBoxUtil.ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
             }
             
             
@@ -934,7 +948,7 @@ public partial class StatusPageViewModel : PageBase
                     }catch (Exception e)
                     {
                         Log.Error(e.Message);
-                        ShowMessageBox("启动外部Api服务失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
+                        MessageBoxUtil.ShowMessageBox("启动外部Api服务失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
                     }
                 });
                 ExternelApiServerThread.Start();
@@ -974,7 +988,7 @@ public partial class StatusPageViewModel : PageBase
             catch (Exception e)
             {
                 Log.Error(e.Message);
-                ShowMessageBox(e.Message, "确定").GetAwaiter().GetResult();
+                MessageBoxUtil.ShowMessageBox(e.Message, "确定").GetAwaiter().GetResult();
             }
 
 
@@ -988,7 +1002,7 @@ public partial class StatusPageViewModel : PageBase
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey) ||
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName))
                 {
-                    ShowMessageBox(
+                    MessageBoxUtil.ShowMessageBox(
                             "注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！",
                             "我明白上述信息")
                         .GetAwaiter().GetResult();
@@ -1032,7 +1046,7 @@ public partial class StatusPageViewModel : PageBase
             catch (Exception e)
             {
                 Log.Error(e.Message);
-                ShowMessageBox("连接大语言模型失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
+                MessageBoxUtil.ShowMessageBox("连接大语言模型失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
             }
 
 
@@ -1069,7 +1083,7 @@ public partial class StatusPageViewModel : PageBase
             if (!pyRes.Status)
             {
                 Log.Error("Start TTS voice output service failed.");
-                ShowMessageBox("启动TTS语音输出服务失败!" + pyRes.Message, "确定").GetAwaiter().GetResult();
+                MessageBoxUtil.ShowMessageBox("启动TTS语音输出服务失败!" + pyRes.Message, "确定").GetAwaiter().GetResult();
             }
             
 
@@ -1200,7 +1214,7 @@ public partial class StatusPageViewModel : PageBase
             catch (Exception e)
             {
                 Log.Error(e.Message);
-                ShowMessageBox("加载历史聊天记录失败! 错误信息：" + e.Message, "确定");
+                MessageBoxUtil.ShowMessageBox("加载历史聊天记录失败! 错误信息：" + e.Message, "确定");
             }
 
 
@@ -1233,14 +1247,14 @@ public partial class StatusPageViewModel : PageBase
                     if (!process.Start())
                     {
                         Log.Error("Failed to start plugin: " + pluginName);
-                        ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定").GetAwaiter().GetResult();
+                        MessageBoxUtil.ShowMessageBox("启动插件 " + pluginName + " 失败!", "确定").GetAwaiter().GetResult();
                         continue;
                     }
                 }
                 catch (Exception e)
                 {
                     Log.Error(e.Message);
-                    ShowMessageBox("启动插件 " + pluginName + " 失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult(); ;
+                    MessageBoxUtil.ShowMessageBox("启动插件 " + pluginName + " 失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult(); ;
                     continue;
                 }
 
@@ -1252,8 +1266,13 @@ public partial class StatusPageViewModel : PageBase
             InfoBarTitle = "当前状态：启动成功！\n";
             UpdateStatusColor(Color.FromRgb(36, 192, 81));
 
-            ShowToast("启动成功!", "启动成功!", NotificationType.Success);
+            MessageBoxUtil.ShowToast("启动成功!", "启动成功!", NotificationType.Success);
 
+            // change status
+            GlobalStatus.CurrentRunningStatus = RunningStatus.Running;
+            GlobalStatus.CurrentStatus = SystemStatus.Idle;
+            GlobalStatus.CurrentExecutor = ExecutorName.StatusPage;
+            
             LastInferenceTime = DateTime.Now;
 
             RunningState = true;
@@ -1261,47 +1280,6 @@ public partial class StatusPageViewModel : PageBase
             RunCodeProtection = false;
         });
         startThread.Start();
-    }
-
-    private async Task ShowMessageBox(string message, string buttonText)
-    {
-        // 检查是否在UI线程上运行
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            // 将操作调度到UI线程
-            await Dispatcher.UIThread.InvokeAsync(() => ShowMessageBox(message, buttonText));
-        }
-        else
-        {
-            // 如果已经在UI线程上，直接执行
-
-            DynamicUIConfig.GlobalDialogManager.CreateDialog()
-                .WithTitle("提示！")
-                .WithContent(message)
-                .WithActionButton(buttonText, _ => { }, true)
-                .TryShow();
-        }
-    }
-
-    private async Task ShowToast(string title, string content, NotificationType toastType)
-    {
-        // 检查是否在UI线程上运行
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            // 将操作调度到UI线程
-            await Dispatcher.UIThread.InvokeAsync(() => ShowToast(title, content, toastType));
-        }
-        else
-        {
-            // 如果已经在UI线程上，直接执行
-            DynamicUIConfig.GlobalToastManager.CreateToast()
-                .WithTitle(title)
-                .WithContent(content)
-                .OfType(toastType)
-                .Dismiss().After(TimeSpan.FromSeconds(3))
-                .Dismiss().ByClicking()
-                .Queue();
-        }
     }
 
     private async Task UpdateStatusColor(Color color)
