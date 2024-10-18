@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace PardofelisCore.Util;
 
-public class ResultWrap
+public class ResultWrap<T>
 {
-    public ResultWrap(bool status, string message)
+    public ResultWrap(bool status, T message)
     {
         Status=status;
         Message=message;
     }
 
     public bool Status { get; set; }
-    public string Message { get; set; }
+    public T Message { get; set; }
 }
 

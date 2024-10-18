@@ -30,7 +30,7 @@
                     <TextBlock Margin="0,0,0,0"
                                VerticalAlignment="Center" HorizontalAlignment="Left"
                                FontWeight="Bold"
-                               Text="选择人物设定配置文件:" />
+                               Text="选择TTS模型:" />
                     <ComboBox VerticalAlignment="Top" HorizontalAlignment="Right"
                               Width="200"
                               ItemsSource="{Binding TtsModelNameList}"
@@ -96,7 +96,7 @@
                 <TextBlock Margin="0,0,0,0" HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            FontWeight="Bold"
-                           Text="输入文字后点击生成音频按钮，音频讲输出在{PardofelisAppData}/TTSAudio文件夹下，文件名为下面输入的名称:" />
+                           Text="输入文字后点击生成音频按钮，音频将输出在{PardofelisAppData}/TTSAudio文件夹下，文件名为下面输入的名称:" />
                 <Button Margin="15,0,0,0"
                         VerticalAlignment="Top" HorizontalAlignment="Center"
                         IsEnabled="{Binding !RunCodeProtection}"

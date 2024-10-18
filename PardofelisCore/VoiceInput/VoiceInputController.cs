@@ -34,7 +34,7 @@ public class VoiceInputController
         PortAudio.Terminate();
     }
 
-    public ResultWrap StartListening(CancellationTokenSource cancellationToken)
+    public ResultWrap<string> StartListening(CancellationTokenSource cancellationToken)
     {
         int sampleRate = 16000;
 
@@ -76,7 +76,7 @@ public class VoiceInputController
         if (deviceIndex == PortAudio.NoDevice)
         {
             Log.Information("No default input device found");
-            return new ResultWrap(false, "No default input device found");
+            return new ResultWrap<string>(false, "No default input device found");
         }
 
         DeviceInfo info = PortAudio.GetDeviceInfo(deviceIndex);
@@ -161,6 +161,6 @@ public class VoiceInputController
         Thread thread = new Thread(() => ThreadProcess(cancellationToken));
         thread.Start();
 
-        return new ResultWrap(true, "Voice Input Service Start Successfully!");
+        return new ResultWrap<string>(true, "Voice Input Service Start Successfully!");
     }
 }

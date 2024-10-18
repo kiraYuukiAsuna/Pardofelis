@@ -34,6 +34,8 @@ using System.Text;
 using System.Collections.Concurrent;
 using System.Windows.Input;
 using Avalonia.Controls.Notifications;
+using LLama.Exceptions;
+using LLama.Native;
 using PardofelisCore.Api;
 using PardofelisUI.Utilities;
 using ReactiveUI;
@@ -420,62 +422,6 @@ public partial class StatusPageViewModel : PageBase
         _messageQueue.Add(text);
     }
 
-    private ChatContent ChatMessagesToChatMessage()
-    {
-        ChatContent chatContent = new();
-        foreach (var message in ChatMessages)
-        {
-            switch (message.Role.Label)
-            {
-                case "system":
-                {
-                    if (string.IsNullOrEmpty(message.Content))
-                    {
-                        break;
-                    }
-
-                    chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
-                    (
-                        Role.User,
-                        message.Content
-                    ));
-                    break;
-                }
-
-                case "assistant":
-                {
-                    if (string.IsNullOrEmpty(message.Content))
-                    {
-                        break;
-                    }
-
-                    chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
-                    (
-                        Role.Assistant,
-                        message.Content
-                    ));
-                    break;
-                }
-                case "user":
-                {
-                    if (string.IsNullOrEmpty(message.Content))
-                    {
-                        break;
-                    }
-
-                    chatContent.Messages.Add(new PardofelisCore.Config.ChatMessage
-                    (
-                        Role.User,
-                        message.Content
-                    ));
-                    break;
-                }
-            }
-        }
-
-        return chatContent;
-    }
-
     private async Task onLlmMessageInput(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -550,7 +496,7 @@ public partial class StatusPageViewModel : PageBase
         Log.Information("\n" + text);
         ChatMessages.AddUserMessage(text);
 
-        var chatContentBefore = ChatMessagesToChatMessage();
+        var chatContentBefore = MessageConvert.ChatMessagesToChatMessage(ChatMessages);
         File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"),
             JsonConvert.SerializeObject(chatContentBefore, Formatting.Indented));
 
@@ -634,7 +580,7 @@ public partial class StatusPageViewModel : PageBase
             : "<(未知)>:";
         HistoryTextBlock += "\n" + assistantMessage + "\n\n";
 
-        var chatContentAfter = ChatMessagesToChatMessage();
+        var chatContentAfter = MessageConvert.ChatMessagesToChatMessage(ChatMessages);
         File.WriteAllText(Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json"),
             JsonConvert.SerializeObject(chatContentAfter, Formatting.Indented));
 
@@ -1261,6 +1207,12 @@ public partial class StatusPageViewModel : PageBase
                 pluginInstances.Add(process);
             }
 
+            
+            if (!NativeLibraryConfig.LLama.LibraryHasLoaded || !NativeLibraryConfig.LLava.LibraryHasLoaded)
+            {
+                MessageBoxUtil.ShowMessageBox("LLama或LLava库未加载!", "确定").GetAwaiter().GetResult();
+            }
+            
 
             // 启动成功
             InfoBarTitle = "当前状态：启动成功！\n";

@@ -44,40 +44,40 @@ public class AppDataDirectoryChecker
         ReloadConifg();
     }
 
-    public static ResultWrap GetCurrentPardofelisAppDataPrefixPath()
+    public static ResultWrap<string> GetCurrentPardofelisAppDataPrefixPath()
     {
         if (!string.IsNullOrEmpty(CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath))
         {
-            return new ResultWrap(true, CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath);
+            return new ResultWrap<string>(true, CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath);
         }
         else
         {
-            return new ResultWrap(false, "");
+            return new ResultWrap<string>(false, "");
         }
     }
 
-    public static ResultWrap SetCurrentPardofelisAppDataPrefixPath(string prefixPath)
+    public static ResultWrap<string> SetCurrentPardofelisAppDataPrefixPath(string prefixPath)
     {
         if (!string.IsNullOrEmpty(prefixPath))
         {
             if (!Directory.Exists(prefixPath))
             {
-                return new ResultWrap(false, $"PrefixPath [{prefixPath}] not exist");
+                return new ResultWrap<string>(false, $"PrefixPath [{prefixPath}] not exist");
             }
 
             CommonConfig.PardofelisAppSettings.PardofelisAppDataPrefixPath = prefixPath;
             ApplicationConfig.WriteConfig(PardofelisAppSettingsFilePath, CommonConfig.PardofelisAppSettings);
 
             ReloadConifg();
-            return new ResultWrap(true, $"Set PardofelisAppDataPrefixPath to {prefixPath}");
+            return new ResultWrap<string>(true, $"Set PardofelisAppDataPrefixPath to {prefixPath}");
         }
         else
         {
-            return new ResultWrap(false, "PrefixPath is null or empty");
+            return new ResultWrap<string>(false, "PrefixPath is null or empty");
         }
     }
 
-    public static ResultWrap CheckAppDataDirectoryAndCreateNoExist()
+    public static ResultWrap<string> CheckAppDataDirectoryAndCreateNoExist()
     {
         if (!Directory.Exists(CommonConfig.ToolCallPluginRootPath))
         {
@@ -88,15 +88,15 @@ public class AppDataDirectoryChecker
         if (!Directory.Exists(CommonConfig.PardofelisAppDataPath))
         {
             Log.Information($"PardofelisAppDataPath [{CommonConfig.PardofelisAppDataPath}] not exist");
-            return new ResultWrap(false, $"PardofelisAppDataPath [{CommonConfig.PardofelisAppDataPath}] not exist");
+            return new ResultWrap<string>(false, $"PardofelisAppDataPath [{CommonConfig.PardofelisAppDataPath}] not exist");
         }
         if (!Directory.Exists(CommonConfig.PythonRootPath))
         {
-            return new ResultWrap(false, $"PythonRootPath [{CommonConfig.PythonRootPath}] not exist");
+            return new ResultWrap<string>(false, $"PythonRootPath [{CommonConfig.PythonRootPath}] not exist");
         }
         if (!Directory.Exists(CommonConfig.VoiceModelRootPath))
         {
-            return new ResultWrap(false, $"VoiceModelRootPath [{CommonConfig.VoiceModelRootPath}] not exist");
+            return new ResultWrap<string>(false, $"VoiceModelRootPath [{CommonConfig.VoiceModelRootPath}] not exist");
         }
         if (!Directory.Exists(CommonConfig.ConfigRootPath))
         {
@@ -128,6 +128,6 @@ public class AppDataDirectoryChecker
             Log.Information($"PluginRootPath [{CommonConfig.PluginRootPath}] not exist");
             Directory.CreateDirectory(CommonConfig.PluginRootPath);
         }
-        return new ResultWrap(true, "All AppData Directory Exist");
+        return new ResultWrap<string>(true, "All AppData Directory Exist");
     }
 }

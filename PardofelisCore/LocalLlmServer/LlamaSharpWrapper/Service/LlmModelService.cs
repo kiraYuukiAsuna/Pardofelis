@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using LLama;
 using LLama.Common;
+using LLama.Exceptions;
 using LLama.Native;
 using LLama.Sampling;
 using PardofelisCore.Config;
@@ -59,7 +60,7 @@ public class LlmModelService : ILlmModelService
         {
             Log.Information($"{level}: {message}");
         });*/
-
+        
         // if (_settings.Models.Count == 0)
         // {
         //     _logger.Error("No model settings.");

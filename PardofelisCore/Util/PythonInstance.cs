@@ -109,7 +109,7 @@ public class PythonInstance
         }
     }
 
-    public ResultWrap StartPythonEngine(CancellationTokenSource cancellationToken, List<string> scriptList)
+    public ResultWrap<string> StartPythonEngine(CancellationTokenSource cancellationToken, List<string> scriptList)
     {
         Log.Information("Start Python Thread.");
 
@@ -121,7 +121,7 @@ public class PythonInstance
 
         Log.Information("Python Thread started.");
 
-        return new ResultWrap(true, "Python Thread started.");
+        return new ResultWrap<string>(true, "Python Thread started.");
     }
 
     public PyObject InvokeMethod(string functionName, PyObject[] arg)
