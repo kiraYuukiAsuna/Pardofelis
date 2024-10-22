@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 using PardofelisCore;
 using PardofelisCore.Config;
 using PardofelisCore.Util;
@@ -12,6 +13,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.Connectors.Sqlite;
 using Microsoft.SemanticKernel.Embeddings;
 using Microsoft.SemanticKernel.Memory;
+using PardofelisCore.Api;
 using PardofelisCore.BuitlinCharacter;
 using PardofelisCore.Logger;
 
@@ -117,10 +119,14 @@ if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
     String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelName)
    )
 {
-    builder.AddOpenAIChatCompletion("gpt-4o-mini",
-        "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
+    
+    var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.First();
+
+    
+    builder.AddOpenAIChatCompletion(buitlinApiKey.ModelName,
+        buitlinApiKey.ApiKey, "", "", new HttpClient()
         {
-            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1"),
+            BaseAddress = new Uri(buitlinApiKey.Url),
             Timeout = TimeSpan.FromMinutes(3)
         });
     /*builder.AddOpenAIChatCompletion("gpt-4o-mini",
@@ -353,8 +359,18 @@ VoiceOutputController = new VoiceOutputController(pythonInstance);
 
 
 // 控制台文本对话
-Console.InputEncoding = System.Text.Encoding.UTF8;
-Console.OutputEncoding = System.Text.Encoding.UTF8;
+if (Environment.UserInteractive && !Console.IsInputRedirected && !Console.IsOutputRedirected)
+{
+    try
+    {
+        Console.InputEncoding = Encoding.UTF8;
+        Console.OutputEncoding = Encoding.UTF8;
+    }
+    catch (IOException)
+    {
+        // 无法设置编码，但程序可以继续运行
+    }
+}
 while (true)
 {
     System.Console.Write("User > ");

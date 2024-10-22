@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text;
 using Microsoft.SemanticKernel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using HtmlAgilityPack;

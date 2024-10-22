@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Layout;
+using Avalonia.Markup.Xaml.Templates;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Material.Icons;
 using Newtonsoft.Json;
@@ -139,16 +143,103 @@ public partial class ExtraConfigPageViewModel : PageBase
                 control = new TextBox();
                 control.Bind(TextBox.TextProperty, new Binding(property.Name, BindingMode.TwoWay));
             }
+            else if (property.PropertyType == typeof(bool))
+            {
+                var checkBox = new CheckBox
+                {
+                    Content = property.Name,  // 使用属性名作为 CheckBox 的标签
+                    IsChecked = (bool)property.GetValue(model)  // 设置初始状态
+                };
+
+                // 双向绑定
+                checkBox.Bind(CheckBox.IsCheckedProperty, new Binding(property.Name)
+                {
+                    Mode = BindingMode.TwoWay
+                });
+
+                control = checkBox;
+            }
             else if (property.PropertyType == typeof(List<string>))
             {
                 var listBox = new ListBox();
                 listBox.Bind(ItemsControl.ItemsSourceProperty, new Binding(property.Name));
                 control = listBox;
             }
-            else if (property.PropertyType.IsClass && property.PropertyType != typeof(string))
+            else if (property.PropertyType == typeof(List<KeyValuePair<bool, string>>))
             {
-                continue;
+                var itemsControl = new ItemsControl();
+                itemsControl.ItemTemplate = new FuncDataTemplate<KeyValuePair<bool, string>>((item, _) =>
+                {
+                    var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        
+                    var checkBox = new CheckBox { Margin = new Thickness(0, 0, 5, 0) };
+                    checkBox.IsChecked = item.Key;  // 直接设置初始状态
+                    checkBox.GetObservable(CheckBox.IsCheckedProperty).Subscribe(isChecked =>
+                    {
+                        var list = (List<KeyValuePair<bool, string>>)property.GetValue(model);
+                        var index = list.IndexOf(item);
+                        if (index != -1)
+                        {
+                            // 使用 isChecked ?? false 来处理所有可能的状态
+                            list[index] = new KeyValuePair<bool, string>(isChecked ?? false, item.Value);
+                            property.SetValue(model, list);
+                        }
+                    });
+        
+                    var textBlock = new TextBlock();
+                    textBlock.Text = item.Value;  // 直接设置文本
+        
+                    panel.Children.Add(checkBox);
+                    panel.Children.Add(textBlock);
+        
+                    return panel;
+                });
+
+                itemsControl.Bind(ItemsControl.ItemsSourceProperty, new Binding(property.Name));
+                control = itemsControl;
+            }else if (property.PropertyType == typeof(List<KeyValuePair<string, string>>))
+            {
+                var itemsControl = new ItemsControl();
+                itemsControl.ItemTemplate = new FuncDataTemplate<KeyValuePair<string, string>>((item, _) =>
+                {
+                    var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        
+                    var label = new TextBlock
+                    {
+                        Text = item.Key,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 0, 5, 0),
+                        Width = 100  // 设置一个固定宽度，您可以根据需要调整
+                    };
+        
+                    var textBox = new TextBox
+                    {
+                        Text = item.Value,
+                        Width = 200  // 设置一个固定宽度，您可以根据需要调整
+                    };
+
+                    // 处理文本变化
+                    textBox.GetObservable(TextBox.TextProperty).Subscribe(newText =>
+                    {
+                        var list = (List<KeyValuePair<string, string>>)property.GetValue(model);
+                        var index = list.IndexOf(item);
+                        if (index != -1)
+                        {
+                            list[index] = new KeyValuePair<string, string>(item.Key, newText);
+                            property.SetValue(model, list);
+                        }
+                    });
+        
+                    panel.Children.Add(label);
+                    panel.Children.Add(textBox);
+        
+                    return panel;
+                });
+
+                itemsControl.Bind(ItemsControl.ItemsSourceProperty, new Binding(property.Name));
+                control = itemsControl;
             }
+
 
             if (control != null)
             {

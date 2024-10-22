@@ -3,10 +3,25 @@ using Microsoft.SemanticKernel;
 using Newtonsoft.Json;
 using Serilog;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Media;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace SingPlugin;
+
+public class ManSuiMusicPresetItem
+{
+    public string Name;
+}
+
+public class ManSuiMusicPreset
+{
+    public List<ManSuiMusicPresetItem> SongProviders;
+}
 
 [JsonObject(Newtonsoft.Json.MemberSerialization.OptIn)]
 public partial class Config : ObservableObject
@@ -14,10 +29,157 @@ public partial class Config : ObservableObject
     public static string CurrentPluginWorkingDirectory = System.IO.Directory.GetCurrentDirectory();
     public static string CurrentPardofelisAppDataPath = CurrentPluginWorkingDirectory;
     public static ILogger CurLogger;
-    
-    [ObservableProperty]
-    [JsonProperty("SongDirectory")]
+
+    [ObservableProperty] [JsonProperty("SongDirectory")]
     public string _songDirectory = Path.Join(CurrentPardofelisAppDataPath, "Music");
+
+    [ObservableProperty] [JsonProperty("LocalMode")]
+    public bool _localMode = false;
+
+    [ObservableProperty] [JsonProperty("SongProviders")]
+    public List<KeyValuePair<bool, string>> _songProviders = new();
+
+    [ObservableProperty] [JsonProperty("WebBrowserPath")]
+    public string _webBrowserPath = "";
+
+    public static string GetDirectLinkByFilePathAndName(string filePath, string fileName)
+    {
+        // 通过文件路径和文件名获取直链，手动拼接
+        var url = "https://vip.123pan.cn" + "/" + "1838918272" + filePath + "/" + fileName;
+        CurLogger.Information("Get direct link by file path and name: {url}", url);
+        return url;
+    }
+
+    private static string SignUrl(string originUrl, string privateKey, ulong uid, TimeSpan validDuration)
+    {
+        long ts = DateTimeOffset.UtcNow.Add(validDuration).ToUnixTimeSeconds(); // 有效时间戳
+        int rInt = new Random().Next(); // 随机正整数
+
+        Uri objURL = new Uri(originUrl);
+        string path = objURL.GetComponents(UriComponents.Path, UriFormat.Unescaped);
+        string toBeHashed = $"/{path}-{ts}-{rInt}-{uid}-{privateKey}";
+
+        using (MD5 md5 = MD5.Create())
+        {
+            byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(toBeHashed));
+            string hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+            string authKey = $"{ts}-{rInt}-{uid}-{hash}";
+
+            var query = HttpUtility.ParseQueryString(objURL.Query);
+            query["auth_key"] = authKey;
+
+            UriBuilder uriBuilder = new UriBuilder(objURL)
+            {
+                Query = query.ToString()
+            };
+
+            return uriBuilder.ToString();
+        }
+    }
+
+    private static string SignUrlDefault(string originUrl)
+    {
+        string privateKey = "BVxB5aBpPa5ISeXf"; // 鉴权密钥，即用户在123云盘直链管理中设置的鉴权密钥
+        ulong uid = 1838918272; // 账号id，即用户在123云盘个人中心页面所看到的账号id
+        TimeSpan validDuration = TimeSpan.FromDays(1); // 链接签名有效期
+
+        string newUrl = SignUrl(originUrl, privateKey, uid, validDuration);
+
+        CurLogger.Information("Sign url: {newUrl}", newUrl);
+
+        return newUrl;
+    }
+
+    static void DownloadFileAsync(string url, string destinationPath)
+    {
+        using (WebClient client = new WebClient())
+        {
+            CurLogger.Information("Start downloading...");
+
+            // 添加下载进度事件处理
+            client.DownloadProgressChanged += (sender, e) =>
+            {
+                CurLogger.Information($"Downloading: {e.ProgressPercentage}%");
+            };
+
+            client.DownloadFile(new Uri(url), destinationPath);
+        }
+    }
+
+    private void DownloadByPathAndName(string filePath, string fileName, string downloadPath, string downloadFileName)
+    {
+        try
+        {
+            var directlink = GetDirectLinkByFilePathAndName(filePath, fileName);
+
+            if (!Directory.Exists(downloadPath))
+            {
+                Directory.CreateDirectory(downloadPath);
+            }
+
+            var downloadFilePath = Path.Join(downloadPath, downloadFileName);
+            var signedUrl = SignUrlDefault(directlink);
+            DownloadFileAsync(signedUrl, downloadFilePath);
+        }
+        catch (Exception e)
+        {
+            CurLogger.Error(e, "DownloadByPathAndName error");
+        }
+    }
+
+    private void UserInit()
+    {
+        try
+        {
+            var downloadPath = Path.Join(CurrentPardofelisAppDataPath, "Download", "Resources/ManSuiMusic");
+            var fileName = "ManSuiMusicPreset.json";
+
+            DownloadByPathAndName("/directlink/Resources/ManSuiMusic", fileName, downloadPath, fileName);
+
+            var preset =
+                JsonConvert.DeserializeObject<ManSuiMusicPreset>(File.ReadAllText(Path.Join(downloadPath, fileName)));
+
+            var config = ReadConfig();
+
+            List<KeyValuePair<bool, string>> newProviders = new();
+
+            foreach (var provider in preset.SongProviders)
+            {
+                bool bFind = false;
+                foreach (var local in config.SongProviders)
+                {
+                    if (local.Value == provider.Name)
+                    {
+                        bFind = true;
+                        newProviders.Add(new KeyValuePair<bool, string>(local.Key, provider.Name));
+                        break;
+                    }
+                }
+
+                if (!bFind)
+                {
+                    newProviders.Add(new KeyValuePair<bool, string>(false, provider.Name));
+                }
+            }
+
+            config.SongProviders = newProviders;
+            WriteConfig(config);
+
+            foreach (var provider in newProviders)
+            {
+                if (provider.Key)
+                {
+                    var name = provider.Value + ".txt";
+                    DownloadByPathAndName("/directlink/Resources/ManSuiMusic", name, downloadPath, name);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            CurLogger.Error(e, "UserInit error");
+        }
+    }
 
     public void Init()
     {
@@ -26,11 +188,14 @@ public partial class Config : ObservableObject
         {
             Directory.CreateDirectory(logFileFolder);
         }
-        
+
         CurLogger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.File(Path.Join(logFileFolder, "Log_" +  ThisAssembly.AssemblyName  + ".txt"), rollingInterval: RollingInterval.Day)
+            .WriteTo.File(Path.Join(logFileFolder, "Log_" + ThisAssembly.AssemblyName + ".txt"),
+                rollingInterval: RollingInterval.Day)
             .CreateLogger();
+
+        UserInit();
     }
 
     public static Config ReadConfig()
@@ -77,9 +242,11 @@ public class SingPlugin
 
     // 存储歌曲名称和路径的字典
     Dictionary<string, string> Songs = new Dictionary<string, string>();
-    static SoundPlayer player = new SoundPlayer();  // 使用System.Media.SoundPlayer来播放.wav文件
-    static bool isPlaying = false;  // 追踪是否正在播放
-    static string currentSongName = "";  // 记录当前播放的歌曲名称
+    static SoundPlayer player = new SoundPlayer(); // 使用System.Media.SoundPlayer来播放.wav文件
+    static bool isPlaying = false; // 追踪是否正在播放
+    static string currentSongName = ""; // 记录当前播放的歌曲名称
+    private Process ProcessInfo = new Process();
+
 
     public SingPlugin()
     {
@@ -87,28 +254,43 @@ public class SingPlugin
         PluginConfig = Config.ReadConfig();
 
         // 歌曲文件夹路径
-        string folderPath = PluginConfig.SongDirectory;  // 替换为实际路径
-
-        if(Directory.Exists(folderPath))
+        string folderPath = PluginConfig.SongDirectory; // 替换为实际路径
+        if (Directory.Exists(folderPath))
         {
-            Config.CurLogger.Information("歌曲文件夹路径：{folderPath}", folderPath);
-            // 读取文件夹中所有.wav文件
-            string[] files = Directory.GetFiles(folderPath, "*.wav");
-
-            // 正则表达式提取《》内的内容
-            Regex regex = new Regex(@"《(.*?)》");
-
-            foreach (var file in files)
+            if (PluginConfig.LocalMode)
             {
-                // 获取文件名（不包括路径）
-                string fileName = Path.GetFileName(file);
+                Config.CurLogger.Information("歌曲文件夹路径：{folderPath}", folderPath);
+                // 读取文件夹中所有.wav文件
+                string[] files = Directory.GetFiles(folderPath, "*.wav");
 
-                // 使用正则表达式提取歌曲名称
-                Match match = regex.Match(fileName);
-                if (match.Success)
+                foreach (var file in files)
                 {
-                    string songName = match.Groups[1].Value;
-                    Songs[songName] = file;  // 将歌曲名称和对应的文件路径存入字典
+                    // 获取文件名（不包括路径）
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                    Songs[fileNameWithoutExtension] = file; // 将歌曲名称和对应的文件路径存入字典
+                }
+            }
+            else
+            {
+                var downloadPath = Path.Join(Config.CurrentPardofelisAppDataPath, "Download", "Resources/ManSuiMusic");
+
+                foreach (var provider in PluginConfig.SongProviders)
+                {
+                    if (provider.Key)
+                    {
+                        var name = provider.Value + ".txt";
+                        var musicList = Path.Join(downloadPath, name);
+
+                        string[] lines = File.ReadAllLines(musicList);
+                        foreach (var line in lines)
+                        {
+                            var sp = line.Split("&&");
+                            if (sp.Length == 2)
+                            {
+                                Songs[sp[1]] = sp[0];
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -119,33 +301,92 @@ public class SingPlugin
     public async Task<string> StartSingAsync(
         Kernel kernel,
         [Description("请输入歌曲名称")] string songName
-        )
+    )
     {
-        // 如果输入的是歌曲名称，检查是否存在该歌曲
-        if (Songs.ContainsKey(songName))
+        if (PluginConfig.LocalMode)
         {
-            // 如果有歌曲正在播放，先停止
-            if (isPlaying)
+            bool bFind = false;
+            foreach (var song in Songs)
             {
-                StopSong();
-            }
+                if(song.Key.Contains(songName))
+                {
+                    bFind = true;
+                    
+                    // 如果有歌曲正在播放，先停止
+                    if (isPlaying)
+                    {
+                        StopSong();
+                    }
 
-            // 播放新歌曲
-            string songPath = Songs[songName];
-            PlaySong(songPath);
-            currentSongName = songName;
-            Config.CurLogger.Information("歌曲开始播放：{songName}", songName);
-            return "歌曲开始播放捏~";
+                    // 播放新歌曲
+                    string songPath = song.Value;
+                    PlaySong(songPath);
+                    currentSongName = songName;
+                    Config.CurLogger.Information("歌曲开始播放：{songName}", songName);
+                    return "歌曲开始播放了~";
+                }
+            }
+            
+            if(!bFind)
+            {
+                Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
+                var message = "未找到该歌曲。推荐你几首歌曲：";
+                int count = 0;
+                foreach (var song in Songs.Keys)
+                {
+                    message += song;
+                    count++;
+                    if (count >= 5)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        message += "， ";
+                    }
+                }
+
+                return message;
+            }
+            
+            return "歌曲开始播放了~";
         }
         else
         {
-            Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
-            var message = "未找到该歌曲。已有歌曲列表为：";
-            foreach (var song in Songs.Keys)
+            var bvId = "";
+            foreach (var song in Songs)
             {
-                message += song + "、";
+                if (song.Key.Contains(songName))
+                {
+                    bvId = song.Value;
+                    break;
+                }
             }
-            return message;
+
+            if (bvId == "")
+            {
+                return "没有找到该歌曲~";
+            }
+            
+            try
+            {
+                string url = $"https://www.bilibili.com/video/{bvId}/";
+                string arguments = "--new-window " + url;
+                ProcessInfo = Process.Start(new ProcessStartInfo
+                {
+                    FileName = PluginConfig.WebBrowserPath,
+                    Arguments = arguments
+                });
+            }
+            catch (Exception e)
+            {
+                Config.CurLogger.Error(e, "StartSingAsync error");
+                return "打开浏览器播放在线歌曲失败~错误信息是：" + e.Message;
+            }
+
+            currentSongName = songName;
+
+            return "歌曲开始播放了~";
         }
     }
 
@@ -155,16 +396,23 @@ public class SingPlugin
     public async Task<string> StopSingAsync(
         Kernel kernel)
     {
-        if (isPlaying)
+        if (PluginConfig.LocalMode)
         {
-            StopSong();
-            Config.CurLogger.Information("歌曲停止播放：{currentSongName}", currentSongName);
-            return "歌曲停止播放了捏~";
+            if (isPlaying)
+            {
+                StopSong();
+                Config.CurLogger.Information("歌曲停止播放：{currentSongName}", currentSongName);
+                return "歌曲停止播放了~";
+            }
+            else
+            {
+                Config.CurLogger.Information("当前没有正在播放的歌曲。");
+                return "当前没有正在播放的歌曲。";
+            }
         }
         else
         {
-            Config.CurLogger.Information("当前没有正在播放的歌曲。");
-            return "当前没有正在播放的歌曲。";
+            return "歌曲停止播放了~";
         }
     }
 
@@ -172,8 +420,8 @@ public class SingPlugin
     static void PlaySong(string songPath)
     {
         player.SoundLocation = songPath;
-        player.Load();  // 加载音频文件
-        player.Play();  // 播放音频文件
+        player.Load(); // 加载音频文件
+        player.Play(); // 播放音频文件
         isPlaying = true;
         Config.CurLogger.Information($"正在播放：{currentSongName}");
     }
@@ -183,15 +431,14 @@ public class SingPlugin
     {
         if (isPlaying)
         {
-            player.Stop();  // 停止播放
+            player.Stop(); // 停止播放
             isPlaying = false;
             Config.CurLogger.Information($"已停止播放：{currentSongName}");
-            currentSongName = "";  // 清空当前播放的歌曲名称
+            currentSongName = ""; // 清空当前播放的歌曲名称
         }
         else
         {
             Config.CurLogger.Information("当前没有正在播放的歌曲。");
         }
     }
-
 }

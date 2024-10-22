@@ -419,7 +419,10 @@ public partial class StatusPageViewModel : PageBase
 
     public void QueueMessage(string text)
     {
-        _messageQueue.Add(text);
+        if (_messageQueue != null && !_messageQueue.IsAddingCompleted)
+        {
+            _messageQueue.Add(text);
+        }
     }
 
     private async Task onLlmMessageInput(string text)
@@ -953,10 +956,13 @@ public partial class StatusPageViewModel : PageBase
                             "我明白上述信息")
                         .GetAwaiter().GetResult();
 
-                    builder.AddOpenAIChatCompletion("gpt-4o-mini",
-                        "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
+                    var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
+                    
+                    
+                    builder.AddOpenAIChatCompletion(buitlinApiKey.ModelName,
+                        buitlinApiKey.ApiKey, "", "", new HttpClient()
                         {
-                            BaseAddress = new Uri("https://chatapi.nloli.xyz/v1"),
+                            BaseAddress = new Uri(buitlinApiKey.Url),
                             Timeout = TimeSpan.FromMinutes(3)
                         });
                 }

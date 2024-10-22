@@ -1,5 +1,6 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
+using System.Text;
 using MimeKit;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
