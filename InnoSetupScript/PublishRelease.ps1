@@ -12,6 +12,18 @@ if (Test-Path "../build/PublishAllOutput/PardofelisUI/runtimes") {
     Remove-Item -Path "../build/PublishAllOutput/PardofelisUI/runtimes" -Recurse -Force
 }
 
+if (Test-Path "../build/PublishAllOutput/PardofelisUI/ggml.dll") {
+    Remove-Item -Path "../build/PublishAllOutput/PardofelisUI/ggml.dll" -Recurse -Force
+}
+
+if (Test-Path "../build/PublishAllOutput/PardofelisUI/llama.dll") {
+    Remove-Item -Path "../build/PublishAllOutput/PardofelisUI/llama.dll" -Recurse -Force
+}
+
+if (Test-Path "../build/PublishAllOutput/PardofelisUI/llava_shared.dll") {
+    Remove-Item -Path "../build/PublishAllOutput/PardofelisUI/llava_shared.dll" -Recurse -Force
+}
+
 if (Test-Path "../build/PublishRelease") {
     Remove-Item -Path "../build/PublishRelease" -Recurse -Force
 }

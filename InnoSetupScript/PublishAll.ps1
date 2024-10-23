@@ -13,11 +13,17 @@ if (-not (Test-Path $outputBaseFolder)) {
 
 # 获取所有包含 .csproj 文件的文件夹
 $projectFolders = Get-ChildItem -Path $rootPath -Recurse -Filter *.csproj | 
-                  Select-Object -ExpandProperty DirectoryName -Unique
+Select-Object -ExpandProperty DirectoryName -Unique
 
 foreach ($folder in $projectFolders) {
     # 获取项目名称（使用文件夹名作为项目名）
     $projectName = Split-Path $folder -Leaf
+
+    $selfcontained = $false
+    
+    if ($projectName -eq "PardofelisUI" -or $projectName -eq "PardofelisRunner") {
+        $selfcontained = $true
+    }
     
     # 设置此项目的输出路径
     $outputPath = Join-Path $outputBaseFolder $projectName
@@ -32,10 +38,21 @@ foreach ($folder in $projectFolders) {
     # 发布项目
     $projectFile = Get-ChildItem -Path $folder -Filter *.csproj | Select-Object -First 1
     
-    dotnet publish $projectFile.FullName `
-        --configuration $configuration `
-        --framework $framework `
-        --output $outputPath
+    if ($selfcontained -eq $true) {
+        dotnet publish $projectFile.FullName `
+            --configuration $configuration `
+            --framework $framework `
+            --output $outputPath `
+            --runtime win-x64 `
+            --self-contained true
+    }
+    else {
+        dotnet publish $projectFile.FullName `
+            --configuration $configuration `
+            --framework $framework `
+            --output $outputPath `
+            --runtime win-x64
+    }
 
     # 压缩发布文件（可选）
     # $zipPath = Join-Path $outputBaseFolder "$projectName-$configuration.zip"
