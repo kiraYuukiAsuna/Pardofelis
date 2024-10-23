@@ -49,51 +49,5 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Fil
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
-[Code]
-procedure DeleteDirectory(Dir: string);
-var
-  FindRec: TFindRec;
-  FileName: string;
-begin
-  if FindFirst(Dir + '\*', FindRec) then
-  begin
-    try
-      repeat
-        FileName := Dir + '\' + FindRec.Name;
-        if (FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
-        begin
-          if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
-            DeleteDirectory(FileName);  // Recursive call
-        end
-        else
-          DeleteFile(FileName);
-      until not FindNext(FindRec);
-    finally
-      FindClose(FindRec);
-    end;
-  end;
-  RemoveDir(Dir);  // Remove the directory itself
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  TargetDir: string;
-begin
-  if CurStep = ssInstall then
-  begin
-    // Specify the directory you want to clear/delete
-    TargetDir := ExpandConstant('{app}\ToolCallPlugin');
-    
-    if DirExists(TargetDir) then
-    begin
-      // Call the custom procedure to delete the directory
-      DeleteDirectory(TargetDir);
-    end;
-  end;
-end;
-
-function InitializeSetup(): Boolean;
-begin
-  // Return True to allow the installation to continue
-  Result := True;
-end;
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\*";
