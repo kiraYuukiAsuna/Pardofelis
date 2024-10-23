@@ -23,10 +23,10 @@ public partial class Config : ObservableObject
     public string _modelName = "gpt-4o-mini";
 
     [ObservableProperty] [JsonProperty("Url")]
-    public string _url = "";
+    public string _url = "https://chatapi.nloli.xyz/v1";
 
     [ObservableProperty] [JsonProperty("ApiKey")]
-    public string _apiKey = "";
+    public string _apiKey = "sk-rCGbWDze6M769CGqCc0e88F994C24f6499DeF3202aF0AcE9";
 
 
     public void Init()
@@ -97,10 +97,10 @@ public class ImageRecognitionPlugin
         try
         {
             var builder = Kernel.CreateBuilder();
-            builder.AddOpenAIChatCompletion(PluginConfig.ModelName,
-                PluginConfig.ApiKey, "", "", new HttpClient()
+            builder.AddOpenAIChatCompletion("gpt-4o-mini",
+                "sk-rCGbWDze6M769CGqCc0e88F994C24f6499DeF3202aF0AcE9", "", "", new HttpClient()
                 {
-                    BaseAddress = new Uri(PluginConfig.Url),
+                    BaseAddress = new Uri("https://chatapi.nloli.xyz/v1"),
                     Timeout = TimeSpan.FromMinutes(3)
                 });
             Kernel = builder.Build();
@@ -209,20 +209,7 @@ public class ImageRecognitionPlugin
                 new ImageContent(ConvertBitmapToReadOnlyMemory(bmp), mimeType: "image/png")
             });
 
-            if (string.IsNullOrEmpty(PluginConfig.ModelName))
-            {
-                return "识别图像内容失败！请先配置支持图像的在线大模型名称！";
-            }
 
-            if (string.IsNullOrEmpty(PluginConfig.Url))
-            {
-                return "识别图像内容失败！请先配置支持图像的在线大模型请求地址！";
-            }
-
-            if (string.IsNullOrEmpty(PluginConfig.ApiKey))
-            {
-                return "识别图像内容失败！请先配置支持图像的在线大模型密钥！";
-            }
             
             OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
             {
