@@ -22,12 +22,36 @@
 					<Run FontWeight="Bold" Text="被炖的牢猫" />
 					<Run Text="，麦子，菜月昴" />
 					<LineBreak />
+					<Run Text="：萬里" />
+					<LineBreak />
 					<Run Text="人设：萬里" />
 					<LineBreak />
-					<Run Text="歌曲：渡渡鸟饲养员，诺基亚_Nokia" />
+					<Run Text="桌宠绘画：杂食咸鱼" />
 					<LineBreak />
 					<Run Text="群内客服：冰果冻，Брест-Литовский，三金sama" />
 				</TextBlock>
+
+				<TextBlock Margin="0,10,0,0"
+						   VerticalAlignment="Center"
+						   Text="歌曲提供：" />
+				<TextBlock VerticalAlignment="Top" TextWrapping="Wrap">
+					Misaka-Fish,
+					゚MlKUFANS,
+					Ruri-G,
+					冰镇千城,
+					渡渡鳥饲养员,
+					鹅矛,
+					还没醒喵,
+					玖柒jq丶,
+					满穗美如画,
+					梦境琉璃DreamLight,
+					゚明末耐掐王-满穗,
+					诺基亚_Nokia,
+					西木是卑鄙的外乡人,
+					鑫雨又心雨,
+					缘尘封windy
+				</TextBlock>
+
 				<TextBlock Margin="0,10,0,0"
 						   VerticalAlignment="Center"
 						   Text="满穗桌宠赞助名单:" />
@@ -49,7 +73,7 @@
 					北の冰红猹，
 					唐人且逆天，
 					tamako33，
-					 ，
+					，
 					b站 岺越云梦，
 					5843，
 					保底不歪真君，
@@ -60,6 +84,7 @@
 					政zheng
 				</TextBlock>
 			</StackPanel>
+
 		</controls:GroupBox>
 
 
