@@ -365,7 +365,24 @@ public class SingPlugin
 
             if (bvId == "")
             {
-                return "没有找到该歌曲~";
+                Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
+                var message = "未找到该歌曲。推荐你几首歌曲：";
+                int count = 0;
+                foreach (var song in Songs.Keys)
+                {
+                    message += song;
+                    count++;
+                    if (count >= 5)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        message += "， ";
+                    }
+                }
+
+                return message;
             }
             
             try
