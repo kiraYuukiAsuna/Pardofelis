@@ -1,0 +1,212 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+        .article {
+            position: relative;
+            padding-bottom: 24px;
+        }
+        
+
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+
+        .center-text {
+            text-align: center;
+        }
+        
+
+        .container {
+            max-width: 100%;
+            overflow: hidden;
+            page-break-inside: avoid;
+            display: block;
+        }
+        
+
+        .image {
+            max-width: 100%;
+            max-height: 90vh;
+            height: auto;
+        }
+        
+
+        .image-container {
+            max-width: 100vw;
+        }
+        
+
+        .image-size {
+            height: auto;
+        }
+        
+
+        .list {
+            list-style-type: disc;
+            padding-left: 0;
+            margin-left: 15px;
+        }
+        
+
+        .list-decimal {
+            list-style-type: decimal;
+        }
+        
+
+        .list-item {
+            margin-top: 6px;
+            margin-bottom: 6px;
+            margin-left: 4px;
+        }
+        
+
+        .main-title {
+            padding-bottom: 24px;
+            margin-top: 0;
+            font-size: 40px;
+            margin-block-start: 0;
+            margin-block-end: 0;
+        }
+        
+
+        :root {
+            width: 95%;
+            max-width: 95vw;
+            padding: 0 0 0 30px;
+        }
+        
+        body {
+            font-family: JetBrains Sans,serif;
+        }
+        
+        a {
+            overflow-wrap: anywhere;
+            width: 100vw;
+        }
+        
+        
+        @font-face {
+            font-family: JetBrains Sans;
+            src: url(https://resources.jetbrains.com/storage/jetbrains-sans/JetBrainsSans-Light.woff2) format("woff2"), url(https://resources.jetbrains.com/storage/jetbrains-sans/JetBrainsSans-Light.woff) format("woff");
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: JetBrains Sans;
+            src: url(https://resources.jetbrains.com/storage/jetbrains-sans/JetBrainsSans-Regular.woff2) format("woff2"), url(https://resources.jetbrains.com/storage/jetbrains-sans/JetBrainsSans-Regular.woff) format("woff");
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: JetBrains Sans;
+            src: url(https://resources.jetbrains.com/storage/jetbrains-sans/JetBrainsSans-SemiBold.woff2) format("woff2"), url(https://resources.jetbrains.com/storage/jetbrains-sans/JetBrainsSans-SemiBold.woff) format("woff");
+            font-weight: 600;
+            font-style: normal;
+        }
+        
+        
+        code {
+            display: inline;
+            word-break: break-word;
+            font-size: 15px;
+            line-height: inherit;
+            font-variant-ligatures: none;
+            font-family: JetBrains Sans,monospace;
+            white-space: pre-line;
+            overflow-wrap: break-word;
+        }
+        
+        figcaption {
+            margin-top: 5px;
+        }
+        
+        h2 {
+            padding-top: 16px;
+            padding-bottom: 8px;
+            margin-block-start: 0;
+            margin-block-end: 0;
+        }
+        
+        h3 {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            margin-block-start: 0;
+            margin-block-end: 0;
+        }
+        
+        h4 {
+            padding-top: 4px;
+            padding-bottom: 8px;
+            margin-block-start: 0;
+            margin-block-end: 0;
+        }
+        
+        p {
+            padding: 0;
+            border: 0;
+            line-height: 25px;
+            margin-block-start: 0;
+            margin-block-end: 0;
+            padding-bottom: 8px;
+        }
+        
+        div {
+            display: block;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            page-break-inside: avoid;
+        }
+        
+        th, td {
+            border: 1px solid #c4c4c4;
+            padding: 10px;
+            text-align: left;
+            word-break: break-all;
+        }
+        
+        .entry {
+            display: grid;
+            grid-template-columns: auto max-content;
+            grid-template-areas: "chapter page";
+            align-items: end;
+            gap: 0 .25rem;
+            line-height: 25px;
+        }
+        
+        .toc-link-container{
+            grid-area: chapter;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .toc-link{
+            text-decoration: none;
+            color: black;
+        }
+        
+        .toc-link-container::after {
+            position: absolute;
+            padding-left: .25ch;
+            content: " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
+            ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
+            ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ";
+            text-align: right;
+        }
+        
+        .page {
+            grid-area: page;
+            width: 30px;
+            text-align: right;
+        }
+        
+
+        .topic {
+            page-break-before: always;
+        }
+        </style><title>pdfSourceIN</title></head><body><div><section class="topic"><div><article class="article"><h1 class="main-title">Table of contents</h1><div class="entry"><div class="toc-link-container"><a class="toc-link" href="#270679242">快速开始</a></div><div class="page">2</div></div></article></div></section><section class="topic"><div><article class="article"><h1 class="main-title" id="270679242">快速开始</h1><section><h2 id="270679242#ho9y93_3" data-toc="ho9y93_3#Get-Started.md-ho9y93_3">安装</h2><p id="270679242#ho9y93_4">Windows用户（目前仅支持Windows）</p><ol class="list list-decimal" id="270679242#ho9y93_5" type="1" start="1"><li class="list-item" id="270679242#ho9y93_21"><p>下载分卷压缩资源包，解压到非中文非空格路径下</p></li></ol><div class="container"><figure class="image-container"><img class="center image image-size" id="270679242#ho9y93_6" alt="image.png" title="image.png" src="D:/Dev/Pardofelis/Document/Writerside/images/image.png" width="370" height="195"><figcaption class="center-text">image.png</figcaption></figure></div><ol class="list list-decimal" id="270679242#ho9y93_7" type="1" start="2"><li class="list-item" id="270679242#ho9y93_22"><p>下载主程序安装包（例如图中的 满穗AI助手0.4.3Setup.exe），双击安装</p></li></ol><p id="270679242#ho9y93_8">安装前记得先安装一下依赖，vc_redist.x64.exe</p><div class="container"><figure class="image-container"><img class="center image image-size" id="270679242#ho9y93_9" alt="image_1.png" title="image_1.png" src="D:/Dev/Pardofelis/Document/Writerside/images/image_1.png" width="366" height="175"><figcaption class="center-text">image_1.png</figcaption></figure></div><ol class="list list-decimal" id="270679242#ho9y93_10" type="1" start="3"><li class="list-item" id="270679242#ho9y93_23"><p>安装完成后，打开主程序，在主页设置你的资源PardofelisAppData所在路径</p></li></ol><p id="270679242#ho9y93_11">注意PardofelisAppData应该如下所示：</p><div class="container"><figure class="image-container"><img class="center image image-size" id="270679242#ho9y93_12" alt="image_4.png" title="image_4.png" src="D:/Dev/Pardofelis/Document/Writerside/images/image_4.png" width="735" height="522"><figcaption class="center-text">image_4.png</figcaption></figure></div><div class="container"><figure class="image-container"><img class="center image image-size" id="270679242#ho9y93_13" alt="image_3.png" title="image_3.png" src="D:/Dev/Pardofelis/Document/Writerside/images/image_3.png" width="937" height="589"><figcaption class="center-text">image_3.png</figcaption></figure></div><p id="270679242#ho9y93_14">应该为含有Python3.9.13文件夹的上一级目录，图中应为D:\Dev</p><div class="container"><figure class="image-container"><img class="center image image-size" id="270679242#ho9y93_15" alt="image_2.png" title="image_2.png" src="D:/Dev/Pardofelis/Document/Writerside/images/image_2.png" width="1920" height="1015"><figcaption class="center-text">image_2.png</figcaption></figure></div><p id="270679242#ho9y93_16">点击更新路径信息按钮后，关闭软件并重新打开主程序软件！！！</p><ol class="list list-decimal" id="270679242#ho9y93_17" type="1" start="4"><li class="list-item" id="270679242#ho9y93_24"><p>在当前运行状态节目，点击开始运行</p></li></ol><div class="container"><figure class="image-container"><img class="center image image-size" id="270679242#ho9y93_18" alt="image_5.png" title="image_5.png" src="D:/Dev/Pardofelis/Document/Writerside/images/image_5.png" width="2560" height="1392"><figcaption class="center-text">image_5.png</figcaption></figure></div><ol class="list list-decimal" id="270679242#ho9y93_19" type="1" start="5"><li class="list-item" id="270679242#ho9y93_25"><p>可以去任人物预设配置、大语言模型配置、TTS语音输出配置、额外配置界面进行配置</p></li></ol><p id="270679242#ho9y93_20">具体配置方法请问群友或等待后续教程更新。</p></section></article></div></section></div></body></html>

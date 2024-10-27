@@ -6,6 +6,5 @@
                  name="Instance Name"
                  start-page="starter.md">
 
-    <toc-element topic="starter.md"/>
     <toc-element topic="Get-Started.md"/>
 </instance-profile>
