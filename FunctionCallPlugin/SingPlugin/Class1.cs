@@ -269,6 +269,7 @@ public class SingPlugin
                     string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     Songs[fileNameWithoutExtension] = file; // 将歌曲名称和对应的文件路径存入字典
                 }
+
             }
             else
             {
@@ -331,22 +332,24 @@ public class SingPlugin
             {
                 Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
                 var message = "未找到该歌曲。推荐你几首歌曲：";
+Random random = new Random();
+                List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
                 int count = 0;
-                foreach (var song in Songs.Keys)
+                while (count < 10 && songList.Count > 0)
                 {
-                    message += song;
+                    // 从剩下的歌曲中随机挑选一个
+                    int index = random.Next(songList.Count);
+                    message += songList[index];
+                    songList.RemoveAt(index); // 移除已选中的歌曲
                     count++;
-                    if (count >= 5)
+
+                    if (count < 10 && songList.Count > 0)
                     {
-                        break;
-                    }
-                    else
-                    {
-                        message += "， ";
+                        message += "， "; // 如果不是最后一首歌，添加逗号
                     }
                 }
 
-                return message;
+                return message += "你想选择那首";
             }
             
             return "歌曲开始播放了~";
@@ -367,22 +370,25 @@ public class SingPlugin
             {
                 Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
                 var message = "未找到该歌曲。推荐你几首歌曲：";
+                Random random = new Random();
+                List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
                 int count = 0;
-                foreach (var song in Songs.Keys)
+                while (count < 10 && songList.Count > 0)
                 {
-                    message += song;
+                    // 从剩下的歌曲中随机挑选一个
+                    int index = random.Next(songList.Count);
+                    message += songList[index];
+                    songList.RemoveAt(index); // 移除已选中的歌曲
                     count++;
-                    if (count >= 5)
+
+                    if (count < 10 && songList.Count > 0)
                     {
-                        break;
-                    }
-                    else
-                    {
-                        message += "， ";
+                        message += "， "; // 如果不是最后一首歌，添加逗号
                     }
                 }
 
-                return message;
+
+                return message += "你想选择那首";
             }
             
             try
