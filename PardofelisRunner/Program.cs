@@ -16,6 +16,7 @@ using Microsoft.SemanticKernel.Memory;
 using PardofelisCore.Api;
 using PardofelisCore.BuitlinCharacter;
 using PardofelisCore.Logger;
+using Serilog;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -54,12 +55,28 @@ GlobalConfig.Instance = GlobalConfig.ReadConfig();
 // CancellationTokenSource
 CancellationTokenSource cancellationToken = new CancellationTokenSource();
 
+try
+{
+    BuitlinApiKeyConfig.FetchApiKeyInfo();
+}catch(Exception e)
+{
+    Console.WriteLine(e.Message);
+}
+
+if(BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count == 0)
+{
+    Console.WriteLine("No buitlin api key found.");
+    return -1;
+}
+    
+var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
 
 // 启动向量数据库
 var memoryBuilder = new MemoryBuilder();
-memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "", new HttpClient()
+memoryBuilder.WithOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "", new HttpClient()
 {
-    BaseAddress = new Uri("http://127.0.0.1:14251/v1")
+    BaseAddress = new Uri(buitlinApiKey.Url),
+    Timeout = TimeSpan.FromMinutes(3)
 });
 
 
@@ -113,22 +130,6 @@ if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
     String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelName)
    )
 {
-    try
-    {
-        BuitlinApiKeyConfig.FetchApiKeyInfo();
-    }catch(Exception e)
-    {
-        Console.WriteLine(e.Message);
-    }
-
-    if(BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count == 0)
-    {
-        Console.WriteLine("No buitlin api key found.");
-        return -1;
-    }
-    
-    var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
-
     if (!buitlinApiKey.Enabled)
     {
         bool bFind = false;
@@ -167,9 +168,9 @@ else
         });*/
     
     builder.AddOpenAIChatCompletion("gpt-4o",
-        "sk-a40hsYel9asqR3QP050b1856128e4636A15dB6D89366D9D6", "", "", new HttpClient()
+        "sk-3cTMyQkmZxvcUw0XRiOFZfm1PekqZbI8hkl66gzevA5m90rx", "", "", new HttpClient()
         {
-            BaseAddress = new Uri("https://api.gpt.ge/v1"),
+            BaseAddress = new Uri("https://open.api.gu28.top/v1"),
             Timeout = TimeSpan.FromMinutes(3)
         });
 }

@@ -9,14 +9,19 @@
 		<anotherNamespace:ViewLocator />
     </Application.DataTemplates>
     
+    <Application.Resources>
+        <ResourceDictionary>
+            <FontFamily x:Key="DefaultFontFamily">avares://PardofelisUI/Assets#Source Han Sans SC</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+    
     <Application.Styles>
-        <FluentTheme></FluentTheme>
-        
+
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <sukiUi:SukiTheme ThemeColor="Blue"/>
         <avalonia:MaterialIconStyles />
-        
+
     </Application.Styles>
     
 </Application>
