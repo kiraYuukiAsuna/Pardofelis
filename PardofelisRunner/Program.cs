@@ -71,12 +71,6 @@ var TextMemory = memoryBuilder.Build();
 // 初始化Python环境
 PythonInstance pythonInstance = new PythonInstance(CommonConfig.PythonRootPath);
 
-// 加载Embedding模型
-
-Thread thread = new Thread(() => { InvokeMethod.Run(); });
-thread.Start();
-
-
 //
 var builder = Kernel.CreateBuilder();
 /*
@@ -142,10 +136,17 @@ if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
 }
 else
 {
-    builder.AddOpenAIChatCompletion(apiConfig.OnlineLlmCreateInfo.OnlineModelName,
+    /*builder.AddOpenAIChatCompletion(apiConfig.OnlineLlmCreateInfo.OnlineModelName,
         apiConfig.OnlineLlmCreateInfo.OnlineModelApiKey, "", "", new HttpClient()
         {
             BaseAddress = new Uri(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl),
+            Timeout = TimeSpan.FromMinutes(3)
+        });*/
+    
+    builder.AddOpenAIChatCompletion("gpt-4o",
+        "sk-a40hsYel9asqR3QP050b1856128e4636A15dB6D89366D9D6", "", "", new HttpClient()
+        {
+            BaseAddress = new Uri("https://api.gpt.ge/v1"),
             Timeout = TimeSpan.FromMinutes(3)
         });
 }

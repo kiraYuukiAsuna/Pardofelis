@@ -33,14 +33,6 @@ if (res.Status == false)
     Console.WriteLine($"Failed to find correct PardofelisAppData path. CurrentPath: [{AppDataDirectoryChecker.GetCurrentPardofelisAppDataPrefixPath().Message}]. Please set it to the correct path!");
 }
 
-// 加载Embedding模型
-Thread thread = new Thread(() =>
-{
-    InvokeMethod.Run();
-});
-thread.Start();
-
-
 // 启动向量数据库下载
 var memoryBuilder = new MemoryBuilder();
 memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "", new HttpClient()

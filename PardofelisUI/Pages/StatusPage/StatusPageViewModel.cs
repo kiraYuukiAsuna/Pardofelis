@@ -16,7 +16,6 @@ using Newtonsoft.Json;
 using Serilog;
 using Path = System.IO.Path;
 using PardofelisCore.Config;
-using PardofelisCore;
 using PardofelisCore.Util;
 using Microsoft.SemanticKernel.Memory;
 using Microsoft.SemanticKernel;
@@ -29,17 +28,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel.ChatCompletion;
 using File = System.IO.File;
-using PardofelisCore.LlmController.OpenAiModel;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Windows.Input;
 using Avalonia.Controls.Notifications;
-using LLama.Exceptions;
 using LLama.Native;
+using Microsoft.SemanticKernel.Embeddings;
 using PardofelisCore.Api;
 using PardofelisUI.Utilities;
 using ReactiveUI;
 using SukiUI.Dialogs;
+using Uri = System.Uri;
 
 #pragma warning disable SKEXP0050
 #pragma warning disable SKEXP0010
@@ -376,7 +375,6 @@ public partial class StatusPageViewModel : PageBase
     private ISemanticTextMemory? SemanticTextMemory;
     private PythonInstance? PythonInstance;
     private VoiceInputController? VoiceInputController;
-    private Thread? EmbeddingModelAndLocalLlmApiThread;
     private Kernel? SemanticKernel;
     private VoiceOutputController? VoiceOutputController;
     ChatHistory ChatMessages = new ChatHistory();
@@ -806,11 +804,14 @@ public partial class StatusPageViewModel : PageBase
             Log.Information("Start vector database.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 1;
-
+            
+            var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
+            
             var memoryBuilder = new MemoryBuilder();
-            memoryBuilder.WithOpenAITextEmbeddingGeneration("zpoint", "api key", "org id", new HttpClient()
+            memoryBuilder.WithOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "", new HttpClient()
             {
-                BaseAddress = new Uri("http://127.0.0.1:14251/v1")
+                BaseAddress = new Uri(buitlinApiKey.Url),
+                Timeout = TimeSpan.FromMinutes(3)
             });
 
             IMemoryStore memoryStore =
@@ -823,43 +824,6 @@ public partial class StatusPageViewModel : PageBase
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 2;
             PythonInstance = new PythonInstance(CommonConfig.PythonRootPath);
-
-
-            // 加载Embedding模型
-            Log.Information("Load embedding model.");
-            UpdateStatusColor(Color.FromRgb(117, 101, 192));
-            StepperIndex = 3;
-            if (EmbeddingModelAndLocalLlmApiThread == null)
-            {
-                EmbeddingModelAndLocalLlmApiThread = new Thread(() => { InvokeMethod.Run(); });
-                EmbeddingModelAndLocalLlmApiThread.Start();
-            }
-            
-            var request = new EmbeddingRequest
-            {
-                input = new[] { "你好！" },
-                model = "zpoint",
-                encoding_format = "float"
-            };
-
-            var json = JsonConvert.SerializeObject(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            HttpClient client = new();
-            client.Timeout = TimeSpan.FromMinutes(3);
-            var response = await client.PostAsync("http://127.0.0.1:14251/v1/embeddings", content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseString = await response.Content.ReadAsStringAsync();
-                Log.Information($"TestEmbeddingRequest Success: {responseString}");
-            }
-            else
-            {
-                Log.Information($"TestEmbeddingRequest Error: {response.StatusCode}");
-                MessageBoxUtil.ShowMessageBox("加载Embedding模型失败! 错误信息：" + response.StatusCode.ToString() + "\n" + response.Content,
-                    "确定").GetAwaiter().GetResult();
-            }
 
             try
             {
@@ -875,6 +839,10 @@ public partial class StatusPageViewModel : PageBase
                 MessageBoxUtil.ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
             }
             
+            // 加载Embedding模型 //TODO: Remove this step
+            Log.Information("Load embedding model.");
+            UpdateStatusColor(Color.FromRgb(117, 101, 192));
+            StepperIndex = 3;
             
             // ExternalApiServer
             Log.Information("Start external api server.");
@@ -939,8 +907,7 @@ public partial class StatusPageViewModel : PageBase
                 Log.Error(e.Message);
                 MessageBoxUtil.ShowMessageBox(e.Message, "确定").GetAwaiter().GetResult();
             }
-
-
+            
             // 连接大语言模型
             Log.Information("Connect to large language model.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
@@ -955,9 +922,6 @@ public partial class StatusPageViewModel : PageBase
                             "注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！",
                             "我明白上述信息")
                         .GetAwaiter().GetResult();
-
-                    var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
-                    
                     
                     builder.AddOpenAIChatCompletion(buitlinApiKey.ModelName,
                         buitlinApiKey.ApiKey, "", "", new HttpClient()
@@ -994,6 +958,14 @@ public partial class StatusPageViewModel : PageBase
                         Temperature = 0.0f
                     },
                     kernel: SemanticKernel);
+
+                await testLlmResult;
+
+
+                ITextEmbeddingGenerationService embeddingService =
+                    SemanticKernel.GetRequiredService<ITextEmbeddingGenerationService>();
+                var embedding = embeddingService.GenerateEmbeddingAsync("你好");
+                await embedding;
             }
             catch (Exception e)
             {

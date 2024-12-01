@@ -28,6 +28,7 @@ OutputBaseFilename=ÂúËëAIÖúÊÖ{#MyAppVersion}Setup
 Compression=lzma2/fast
 SolidCompression=yes
 InternalCompressLevel=fast
+WizardStyle=modern
 
 [Languages]
 Name: "chinese"; MessagesFile: "Chinese.isl"
