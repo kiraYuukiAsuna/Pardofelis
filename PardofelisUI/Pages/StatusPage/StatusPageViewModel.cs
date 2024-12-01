@@ -28,11 +28,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel.ChatCompletion;
 using File = System.IO.File;
-using System.Text;
 using System.Collections.Concurrent;
 using System.Windows.Input;
 using Avalonia.Controls.Notifications;
-using LLama.Native;
 using Microsoft.SemanticKernel.Embeddings;
 using PardofelisCore.Api;
 using PardofelisUI.Utilities;
@@ -811,6 +809,17 @@ public partial class StatusPageViewModel : PageBase
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 1;
             
+            try
+            {
+                BuitlinApiKeyConfig.FetchApiKeyInfo();
+            }
+            catch (Exception e)
+            {
+                MessageBoxUtil.ShowMessageBox(
+                        "获取内置ApiKey信息失败! 错误信息：" + e.Message,
+                        "确定")
+                    .GetAwaiter().GetResult();
+            }
             var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
             
             var memoryBuilder = new MemoryBuilder();
@@ -927,18 +936,6 @@ public partial class StatusPageViewModel : PageBase
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey) ||
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName))
                 {
-                    try
-                    {
-                        BuitlinApiKeyConfig.FetchApiKeyInfo();
-                    }
-                    catch (Exception e)
-                    {
-                        MessageBoxUtil.ShowMessageBox(
-                                "获取内置ApiKey信息失败! 错误信息：" + e.Message,
-                                "确定")
-                            .GetAwaiter().GetResult();
-                    }
-
                     if (BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count == 0)
                     {
                         MessageBoxUtil.ShowMessageBox(
@@ -948,8 +945,6 @@ public partial class StatusPageViewModel : PageBase
                     }
                     else
                     {
-                        var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
-
                         if (!buitlinApiKey.Enabled)
                         {
                             bool bFind = false;
@@ -1243,13 +1238,7 @@ public partial class StatusPageViewModel : PageBase
 
                 pluginInstances.Add(process);
             }
-
-
-            if (!NativeLibraryConfig.LLama.LibraryHasLoaded || !NativeLibraryConfig.LLava.LibraryHasLoaded)
-            {
-                MessageBoxUtil.ShowMessageBox("LLama或LLava库未加载!", "确定").GetAwaiter().GetResult();
-            }
-
+            
 
             // 启动成功
             InfoBarTitle = "当前状态：启动成功！\n";
