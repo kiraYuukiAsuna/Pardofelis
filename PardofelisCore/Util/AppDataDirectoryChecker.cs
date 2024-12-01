@@ -20,7 +20,7 @@ public class AppDataDirectoryChecker
         CommonConfig.EmbeddingModelRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "EmbeddingModel");
         CommonConfig.LocalLlmModelRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "LocalLlmModel");
         CommonConfig.LogRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Log");
-        CommonConfig.MemoryRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Memory");
+        CommonConfig.MemoryRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Memory_text-embedding-ada-002");
         CommonConfig.PluginRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Plugin");
         CommonConfig.PythonRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "Python3.9.13");
         CommonConfig.VoiceModelRootPath = Path.Join(CommonConfig.PardofelisAppDataPath, "VoiceModel");

@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Media;
 using CdnDownload;
+using NAudio.Wave;
 
 namespace SingPlugin;
 
@@ -159,7 +160,8 @@ public class SingPlugin
 
     // 存储歌曲名称和路径的字典
     Dictionary<string, string> Songs = new Dictionary<string, string>();
-    static SoundPlayer player = new SoundPlayer(); // 使用System.Media.SoundPlayer来播放.wav文件
+    private IWavePlayer WaveOutDevice;
+    private AudioFileReader AudioFileReader;
     static bool isPlaying = false; // 追踪是否正在播放
     static string currentSongName = ""; // 记录当前播放的歌曲名称
     private Process ProcessInfo = new Process();
@@ -181,6 +183,15 @@ public class SingPlugin
                 string[] files = Directory.GetFiles(folderPath, "*.wav");
 
                 foreach (var file in files)
+                {
+                    // 获取文件名（不包括路径）
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                    Songs[fileNameWithoutExtension] = file; // 将歌曲名称和对应的文件路径存入字典
+                }
+                
+                string[] filemp3s = Directory.GetFiles(folderPath, "*.mp3");
+
+                foreach (var file in filemp3s)
                 {
                     // 获取文件名（不包括路径）
                     string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
@@ -220,112 +231,119 @@ public class SingPlugin
         [Description("请输入歌曲名称")] string songName
     )
     {
-        if (PluginConfig.LocalMode)
+        try
         {
-            bool bFind = false;
-            foreach (var song in Songs)
+            if (PluginConfig.LocalMode)
             {
-                if (song.Key.Contains(songName))
+                bool bFind = false;
+                foreach (var song in Songs)
                 {
-                    bFind = true;
-
-                    // 如果有歌曲正在播放，先停止
-                    if (isPlaying)
+                    if (song.Key.Contains(songName))
                     {
-                        StopSong();
-                    }
+                        bFind = true;
 
-                    // 播放新歌曲
-                    string songPath = song.Value;
-                    PlaySong(songPath);
-                    currentSongName = songName;
-                    Config.CurLogger.Information("歌曲开始播放：{songName}", songName);
-                    return "歌曲开始播放了~";
-                }
-            }
+                        // 如果有歌曲正在播放，先停止
+                        if (isPlaying)
+                        {
+                            StopSong();
+                        }
 
-            if (!bFind)
-            {
-                Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
-                var message = "未找到该歌曲。推荐你几首歌曲：";
-                Random random = new Random();
-                List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
-                int count = 0;
-                while (count < 10 && songList.Count > 0)
-                {
-                    // 从剩下的歌曲中随机挑选一个
-                    int index = random.Next(songList.Count);
-                    message += songList[index];
-                    songList.RemoveAt(index); // 移除已选中的歌曲
-                    count++;
-
-                    if (count < 10 && songList.Count > 0)
-                    {
-                        message += "， "; // 如果不是最后一首歌，添加逗号
+                        // 播放新歌曲
+                        string songPath = song.Value;
+                        PlaySong(songPath);
+                        currentSongName = songName;
+                        Config.CurLogger.Information("歌曲开始播放：{songName}", songName);
+                        return "歌曲开始播放了~";
                     }
                 }
 
-                return message += "你想选择那首";
-            }
+                if (!bFind)
+                {
+                    Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
+                    var message = "未找到该歌曲。推荐你几首歌曲：";
+                    Random random = new Random();
+                    List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
+                    int count = 0;
+                    while (count < 10 && songList.Count > 0)
+                    {
+                        // 从剩下的歌曲中随机挑选一个
+                        int index = random.Next(songList.Count);
+                        message += songList[index];
+                        songList.RemoveAt(index); // 移除已选中的歌曲
+                        count++;
 
-            return "歌曲开始播放了~";
-        }
-        else
+                        if (count < 10 && songList.Count > 0)
+                        {
+                            message += "， "; // 如果不是最后一首歌，添加逗号
+                        }
+                    }
+
+                    return message += "你想选择那首";
+                }
+
+                return "歌曲开始播放了~";
+            }
+            else
+            {
+                var bvId = "";
+                foreach (var song in Songs)
+                {
+                    if (song.Key.Contains(songName))
+                    {
+                        bvId = song.Value;
+                        break;
+                    }
+                }
+
+                if (bvId == "")
+                {
+                    Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
+                    var message = "未找到该歌曲。推荐你几首歌曲：";
+                    Random random = new Random();
+                    List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
+                    int count = 0;
+                    while (count < 10 && songList.Count > 0)
+                    {
+                        // 从剩下的歌曲中随机挑选一个
+                        int index = random.Next(songList.Count);
+                        message += songList[index];
+                        songList.RemoveAt(index); // 移除已选中的歌曲
+                        count++;
+
+                        if (count < 10 && songList.Count > 0)
+                        {
+                            message += "， "; // 如果不是最后一首歌，添加逗号
+                        }
+                    }
+
+
+                    return message += "你想选择那首";
+                }
+
+                try
+                {
+                    string url = $"https://www.bilibili.com/video/{bvId}/";
+                    string arguments = "--new-window " + url;
+                    ProcessInfo = Process.Start(new ProcessStartInfo
+                    {
+                        FileName = PluginConfig.WebBrowserPath,
+                        Arguments = arguments
+                    });
+                }
+                catch (Exception e)
+                {
+                    Config.CurLogger.Error(e, "StartSingAsync error");
+                    return "打开浏览器播放在线歌曲失败~错误信息是：" + e.Message;
+                }
+
+                currentSongName = songName;
+
+                return "歌曲开始播放了~";
+            }
+        }catch (Exception e)
         {
-            var bvId = "";
-            foreach (var song in Songs)
-            {
-                if (song.Key.Contains(songName))
-                {
-                    bvId = song.Value;
-                    break;
-                }
-            }
-
-            if (bvId == "")
-            {
-                Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
-                var message = "未找到该歌曲。推荐你几首歌曲：";
-                Random random = new Random();
-                List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
-                int count = 0;
-                while (count < 10 && songList.Count > 0)
-                {
-                    // 从剩下的歌曲中随机挑选一个
-                    int index = random.Next(songList.Count);
-                    message += songList[index];
-                    songList.RemoveAt(index); // 移除已选中的歌曲
-                    count++;
-
-                    if (count < 10 && songList.Count > 0)
-                    {
-                        message += "， "; // 如果不是最后一首歌，添加逗号
-                    }
-                }
-
-
-                return message += "你想选择那首";
-            }
-
-            try
-            {
-                string url = $"https://www.bilibili.com/video/{bvId}/";
-                string arguments = "--new-window " + url;
-                ProcessInfo = Process.Start(new ProcessStartInfo
-                {
-                    FileName = PluginConfig.WebBrowserPath,
-                    Arguments = arguments
-                });
-            }
-            catch (Exception e)
-            {
-                Config.CurLogger.Error(e, "StartSingAsync error");
-                return "打开浏览器播放在线歌曲失败~错误信息是：" + e.Message;
-            }
-
-            currentSongName = songName;
-
-            return "歌曲开始播放了~";
+            Config.CurLogger.Error(e, "StartSingAsync error");
+            return "播放歌曲失败~错误信息是：" + e.Message;
         }
     }
 
@@ -356,21 +374,40 @@ public class SingPlugin
     }
 
     // 播放歌曲的方法
-    static void PlaySong(string songPath)
+    private void PlaySong(string songPath)
     {
-        player.SoundLocation = songPath;
-        player.Load(); // 加载音频文件
-        player.Play(); // 播放音频文件
+        
+        if (WaveOutDevice != null)
+        {
+            WaveOutDevice.Stop();
+            WaveOutDevice.Dispose();
+            WaveOutDevice = null;
+        }
+        if (AudioFileReader != null)
+        {
+            AudioFileReader.Dispose();
+            AudioFileReader = null;
+        }
+
+        WaveOutDevice = new WaveOutEvent();
+        AudioFileReader = new AudioFileReader(songPath);
+        WaveOutDevice.Init(AudioFileReader);
+        WaveOutDevice.Play();
+        
         isPlaying = true;
         Config.CurLogger.Information($"正在播放：{currentSongName}");
     }
 
     // 停止歌曲的方法
-    static void StopSong()
+    private void StopSong()
     {
         if (isPlaying)
         {
-            player.Stop(); // 停止播放
+            if (WaveOutDevice != null)
+            {
+                WaveOutDevice.Stop();
+            }
+            
             isPlaying = false;
             Config.CurLogger.Information($"已停止播放：{currentSongName}");
             currentSongName = ""; // 清空当前播放的歌曲名称
@@ -379,5 +416,49 @@ public class SingPlugin
         {
             Config.CurLogger.Information("当前没有正在播放的歌曲。");
         }
+    }
+    
+    
+    public void Pause()
+    {
+        if (WaveOutDevice != null)
+        {
+            WaveOutDevice.Pause();
+        }
+    }
+
+    public void Resume()
+    {
+        if (WaveOutDevice != null)
+        {
+            WaveOutDevice.Play();
+        }
+    }
+
+    public void SetVolume(float volume) // 0.0 to 1.0
+    {
+        if (AudioFileReader != null)
+        {
+            AudioFileReader.Volume = volume;
+        }
+    }
+    
+    public void Dispose()
+    {
+        if (WaveOutDevice != null)
+        {
+            WaveOutDevice.Dispose();
+            WaveOutDevice = null;
+        }
+        if (AudioFileReader != null)
+        {
+            AudioFileReader.Dispose();
+            AudioFileReader = null;
+        }
+    }
+    
+    ~SingPlugin()
+    {
+        Dispose();
     }
 }

@@ -962,7 +962,7 @@ public partial class StatusPageViewModel : PageBase
                             if (!bFind)
                             {
                                 MessageBoxUtil.ShowMessageBox(
-                                        "获取内置ApiKey信息失败! 错误信息：没有可用的内置ApiKey信息! 请联系开发者!",
+                                        "获取内置ApiKey信息失败! 错误信息：没有可用的内置ApiKey信息，或内置ApiKey已被禁用! 请联系开发者!",
                                         "确定")
                                     .GetAwaiter().GetResult();
                             }
@@ -990,6 +990,12 @@ public partial class StatusPageViewModel : PageBase
                             Timeout = TimeSpan.FromMinutes(3)
                         });
                 }
+                
+                builder.AddOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "", "",new HttpClient()
+                {
+                    BaseAddress = new Uri(buitlinApiKey.Url),
+                    Timeout = TimeSpan.FromMinutes(3)
+                });
             }
             else if (m_CurrentModelParameter.ModelType == ModelType.Local)
             {

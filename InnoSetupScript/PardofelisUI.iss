@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ManSuiAiAssistant"
-#define MyAppVersion "0.4.4"
+#define MyAppVersion "0.4.5"
 #define MyAppPublisher "kiraYuukiAsuna"
 #define MyAppURL "https://space.bilibili.com/25594943"
-#define MyAppExeName "����AI����.exe"
+#define MyAppExeName "满穗AI助手.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -24,7 +24,7 @@ DisableDirPage=no
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\build
-OutputBaseFilename=����AI����{#MyAppVersion}Setup
+OutputBaseFilename=满穗AI助手{#MyAppVersion}Setup
 Compression=lzma2/fast
 SolidCompression=yes
 InternalCompressLevel=fast

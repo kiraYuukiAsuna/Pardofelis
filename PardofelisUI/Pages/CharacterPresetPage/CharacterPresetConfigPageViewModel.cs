@@ -87,6 +87,7 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
 
         CharacterPresetTextAkaSystemPrompt = config.PresetContent;
 
+        ExceptTextRegexExpressionsDataGridContent.Clear();
         foreach (var regexExpression in config.ExceptTextRegexExpression)
         {
             ExceptTextRegexExpressionsDataGridContent.Add(new ExceptTextRegexExpressionsContentViewModel()
@@ -95,22 +96,13 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
             });
         }
 
-        if (config.ExceptTextRegexExpression.Count == 0)
-        {
-            ExceptTextRegexExpressionsDataGridContent.Clear();
-        }
-
+        EnabledPluginDataGridContent.Clear();
         foreach (var pluginName in config.EnabledPlugins)
         {
             EnabledPluginDataGridContent.Add(new EnabledPluginContentViewModel
             {
                 PlugininName = pluginName
             });
-        }
-
-        if (config.EnabledPlugins.Count == 0)
-        {
-            EnabledPluginDataGridContent.Clear();
         }
 
         IdleAskTime = config.IdleAskMeTime;
