@@ -108,7 +108,7 @@ public partial class StatusPageViewModel : PageBase
         catch (Exception e)
         {
             Log.Error(e.Message);
-            
+
             DynamicUIConfig.GlobalDialogManager.CreateDialog()
                 .WithTitle("错误！")
                 .WithContent("加载配置文件失败！没有选择有效的大语言模型配置文件!")
@@ -366,7 +366,7 @@ public partial class StatusPageViewModel : PageBase
     }
 
     private CancellationTokenSource CurrentCancellationToken;
-    
+
     private Thread idleAskThread;
 
     private List<Process> pluginInstances = new();
@@ -407,6 +407,7 @@ public partial class StatusPageViewModel : PageBase
         {
             _messageQueue.CompleteAdding();
         }
+
         _messageProcessingThread.Join();
     }
 
@@ -437,26 +438,26 @@ public partial class StatusPageViewModel : PageBase
         }
 
         Log.Information("Start process llm message input.");
-        
+
         Log.Information("Start vector search.");
         List<KeyValuePair<string, string>> lastlastvectorSearch = new();
         List<KeyValuePair<string, string>> lastvectorSearch = new();
         List<KeyValuePair<string, string>> vectorSearch = new();
         try
         {
-            if(ChatMessages.Count >= 2)
+            if (ChatMessages.Count >= 2)
             {
                 var lastlastMessage = ChatMessages[ChatMessages.Count - 2].ToString();
 
                 var lastMessage = ChatMessages[ChatMessages.Count - 1].ToString();
 
-                lastlastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastlastMessage).GetAwaiter().GetResult();
+                lastlastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastlastMessage).GetAwaiter()
+                    .GetResult();
 
                 lastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastMessage).GetAwaiter().GetResult();
             }
 
             vectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", text).GetAwaiter().GetResult();
-
         }
         catch (Exception e)
         {
@@ -475,10 +476,12 @@ public partial class StatusPageViewModel : PageBase
         {
             systemPrompt += message.Value + message.Key + "\n";
         }
+
         foreach (var message in lastvectorSearch)
         {
             systemPrompt += message.Value + message.Key + "\n";
         }
+
         foreach (var message in vectorSearch)
         {
             systemPrompt += message.Value + message.Key + "\n";
@@ -493,7 +496,7 @@ public partial class StatusPageViewModel : PageBase
             ChatSystemPrompt = systemPrompt,
             Temperature = 0.0f,
         };
-
+        
         Log.Information("\n" + text);
         ChatMessages.AddUserMessage(text);
 
@@ -608,7 +611,8 @@ public partial class StatusPageViewModel : PageBase
     [RelayCommand]
     private void Run()
     {
-        if (GlobalStatus.CurrentRunningStatus == RunningStatus.Running && GlobalStatus.CurrentExecutor != ExecutorName.StatusPage)
+        if (GlobalStatus.CurrentRunningStatus == RunningStatus.Running &&
+            GlobalStatus.CurrentExecutor != ExecutorName.StatusPage)
         {
             DynamicUIConfig.GlobalDialogManager.CreateDialog()
                 .WithTitle("提示！")
@@ -617,7 +621,7 @@ public partial class StatusPageViewModel : PageBase
                 .TryShow();
             return;
         }
-        
+
         if (RunningState)
         {
             Thread stopThread = new Thread(async () =>
@@ -768,7 +772,8 @@ public partial class StatusPageViewModel : PageBase
             {
                 Steps = new AvaloniaList<string>()
                 {
-                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "启动外部ApiServer", "加载FunctionCall插件", "连接大语言模型", "启动TTS语音输出服务",
+                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "启动外部ApiServer", "加载FunctionCall插件", "连接大语言模型",
+                    "启动TTS语音输出服务",
                 };
                 StepperIndex = 0;
             }
@@ -776,7 +781,8 @@ public partial class StatusPageViewModel : PageBase
             {
                 Steps = new AvaloniaList<string>()
                 {
-                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "启动外部ApiServer", "加载FunctionCall插件", "连接大语言模型", "启动语音输入服务", "启动TTS语音输出服务",
+                    "启动向量数据库", "初始化Python环境", "加载Embedding模型", "启动外部ApiServer", "加载FunctionCall插件", "连接大语言模型",
+                    "启动语音输入服务", "启动TTS语音输出服务",
                 };
                 StepperIndex = 0;
             }
@@ -839,11 +845,13 @@ public partial class StatusPageViewModel : PageBase
                 MessageBoxUtil.ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
             }
             
+            
             // 加载Embedding模型 //TODO: Remove this step
             Log.Information("Load embedding model.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 3;
             
+
             // ExternalApiServer
             Log.Information("Start external api server.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
@@ -862,7 +870,8 @@ public partial class StatusPageViewModel : PageBase
                                 QueueMessage(text);
                             }
                         });
-                    }catch (Exception e)
+                    }
+                    catch (Exception e)
                     {
                         Log.Error(e.Message);
                         MessageBoxUtil.ShowMessageBox("启动外部Api服务失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
@@ -871,14 +880,14 @@ public partial class StatusPageViewModel : PageBase
                 ExternelApiServerThread.Start();
             }
 
-            
+
             // 
             var builder = Kernel.CreateBuilder();
             builder.Services.AddLogging(c =>
                 c.SetMinimumLevel(LogLevel.Trace).AddConsole()
                     .AddProvider(new FileLoggerProvider(Path.Join(CommonConfig.LogRootPath, "SemanticKernel.txt"))));
-            
-            
+
+
             // 加载FunctionCall插件
             Log.Information("Load function call plugin.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
@@ -918,17 +927,64 @@ public partial class StatusPageViewModel : PageBase
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey) ||
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName))
                 {
-                    MessageBoxUtil.ShowMessageBox(
-                            "注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！",
-                            "我明白上述信息")
-                        .GetAwaiter().GetResult();
-                    
-                    builder.AddOpenAIChatCompletion(buitlinApiKey.ModelName,
-                        buitlinApiKey.ApiKey, "", "", new HttpClient()
+                    try
+                    {
+                        BuitlinApiKeyConfig.FetchApiKeyInfo();
+                    }
+                    catch (Exception e)
+                    {
+                        MessageBoxUtil.ShowMessageBox(
+                                "获取内置ApiKey信息失败! 错误信息：" + e.Message,
+                                "确定")
+                            .GetAwaiter().GetResult();
+                    }
+
+                    if (BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count == 0)
+                    {
+                        MessageBoxUtil.ShowMessageBox(
+                                "获取内置ApiKey信息失败! 错误信息：没有可用的内置ApiKey信息! 请联系开发者!",
+                                "确定")
+                            .GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
+
+                        if (!buitlinApiKey.Enabled)
                         {
-                            BaseAddress = new Uri(buitlinApiKey.Url),
-                            Timeout = TimeSpan.FromMinutes(3)
-                        });
+                            bool bFind = false;
+                            for (int i = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count - 1; i >= 0; i--)
+                            {
+                                var api = BuitlinApiKeyConfig.BuitlinApiKeyInfos[i];
+                                if (api.Enabled)
+                                {
+                                    buitlinApiKey = api;
+                                    bFind = true;
+                                    break;
+                                }
+                            }
+
+                            if (!bFind)
+                            {
+                                MessageBoxUtil.ShowMessageBox(
+                                        "获取内置ApiKey信息失败! 错误信息：没有可用的内置ApiKey信息! 请联系开发者!",
+                                        "确定")
+                                    .GetAwaiter().GetResult();
+                            }
+                        }
+
+                        builder.AddOpenAIChatCompletion(buitlinApiKey.ModelName,
+                            buitlinApiKey.ApiKey, "", "", new HttpClient()
+                            {
+                                BaseAddress = new Uri(buitlinApiKey.Url),
+                                Timeout = TimeSpan.FromMinutes(3)
+                            });
+                        
+                        MessageBoxUtil.ShowMessageBox(
+                                "注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！欢迎捐赠以便维持在线模型的使用！",
+                                "我明白上述信息")
+                            .GetAwaiter().GetResult();
+                    }
                 }
                 else
                 {
@@ -998,6 +1054,7 @@ public partial class StatusPageViewModel : PageBase
                 StepperIndex = 7;
                 UpdateStatusColor(Color.FromRgb(117, 101, 192));
             }
+
             VoiceOutputController = new(PythonInstance);
             var voiceOutputInferenceCode =
                 File.ReadAllText(Path.Join(CommonConfig.PardofelisAppDataPath, @"VoiceModel\VoiceOutput\infer.py"));
@@ -1009,7 +1066,7 @@ public partial class StatusPageViewModel : PageBase
                 Log.Error("Start TTS voice output service failed.");
                 MessageBoxUtil.ShowMessageBox("启动TTS语音输出服务失败!" + pyRes.Message, "确定").GetAwaiter().GetResult();
             }
-            
+
 
             // 启动空闲自动询问线程
             idleAskThread = new Thread(() =>
@@ -1178,19 +1235,21 @@ public partial class StatusPageViewModel : PageBase
                 catch (Exception e)
                 {
                     Log.Error(e.Message);
-                    MessageBoxUtil.ShowMessageBox("启动插件 " + pluginName + " 失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult(); ;
+                    MessageBoxUtil.ShowMessageBox("启动插件 " + pluginName + " 失败! 错误信息：" + e.Message, "确定").GetAwaiter()
+                        .GetResult();
+                    ;
                     continue;
                 }
 
                 pluginInstances.Add(process);
             }
 
-            
+
             if (!NativeLibraryConfig.LLama.LibraryHasLoaded || !NativeLibraryConfig.LLava.LibraryHasLoaded)
             {
                 MessageBoxUtil.ShowMessageBox("LLama或LLava库未加载!", "确定").GetAwaiter().GetResult();
             }
-            
+
 
             // 启动成功
             InfoBarTitle = "当前状态：启动成功！\n";
@@ -1202,7 +1261,7 @@ public partial class StatusPageViewModel : PageBase
             GlobalStatus.CurrentRunningStatus = RunningStatus.Running;
             GlobalStatus.CurrentStatus = SystemStatus.Idle;
             GlobalStatus.CurrentExecutor = ExecutorName.StatusPage;
-            
+
             LastInferenceTime = DateTime.Now;
 
             RunningState = true;

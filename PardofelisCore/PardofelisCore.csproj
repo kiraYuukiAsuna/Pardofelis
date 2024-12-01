@@ -32,7 +32,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Launcher\" />
+      <Compile Remove="Launcher\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Launcher\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Launcher\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CdnDownload\CdnDownload.csproj" />
     </ItemGroup>
 
 </Project>
