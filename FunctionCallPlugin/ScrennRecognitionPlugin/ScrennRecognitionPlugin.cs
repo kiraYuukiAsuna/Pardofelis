@@ -82,14 +82,14 @@ public partial class Config : ObservableObject
     }
 }
 
-public class ImageRecognitionPlugin
+public class ScrennRecognitionPlugin
 {
     public Config PluginConfig = new Config();
 
     private Kernel Kernel;
     private IChatCompletionService ChatCompletionService;
     
-    public ImageRecognitionPlugin()
+    public ScrennRecognitionPlugin()
     {
         PluginConfig.Init();
         PluginConfig = Config.ReadConfig();
@@ -199,6 +199,20 @@ public class ImageRecognitionPlugin
             DeleteObject(hBitmap);
             DeleteDC(hMemoryDC);
             ReleaseDC(hWnd, hScreenDC);
+            
+            if (string.IsNullOrEmpty(PluginConfig.ModelName))
+            {
+                return "识别图像内容失败！请先配置支持图像的在线大模型名称！";
+            }
+            if (string.IsNullOrEmpty(PluginConfig.Url))
+            {
+                return "识别图像内容失败！请先配置支持图像的在线大模型请求地址！";
+            }
+
+            if (string.IsNullOrEmpty(PluginConfig.ApiKey))
+            {
+                return "识别图像内容失败！请先配置支持图像的在线大模型密钥！";
+            }
 
             ChatHistory chatMessages = new ChatHistory();
             var systemPrompt = "识别并分析图像内容，给出详细的描述信息，以便能够作为上下文供AI助手进行回答。";
@@ -208,8 +222,6 @@ public class ImageRecognitionPlugin
                 new TextContent(systemPrompt),
                 new ImageContent(ConvertBitmapToReadOnlyMemory(bmp), mimeType: "image/png")
             });
-
-
             
             OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
             {

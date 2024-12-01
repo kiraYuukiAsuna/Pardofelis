@@ -5,11 +5,7 @@ using Serilog;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Media;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Web;
+using CdnDownload;
 
 namespace SingPlugin;
 
@@ -42,92 +38,6 @@ public partial class Config : ObservableObject
     [ObservableProperty] [JsonProperty("WebBrowserPath")]
     public string _webBrowserPath = "";
 
-    public static string GetDirectLinkByFilePathAndName(string filePath, string fileName)
-    {
-        // 通过文件路径和文件名获取直链，手动拼接
-        var url = "https://vip.123pan.cn" + "/" + "1838918272" + filePath + "/" + fileName;
-        CurLogger.Information("Get direct link by file path and name: {url}", url);
-        return url;
-    }
-
-    private static string SignUrl(string originUrl, string privateKey, ulong uid, TimeSpan validDuration)
-    {
-        long ts = DateTimeOffset.UtcNow.Add(validDuration).ToUnixTimeSeconds(); // 有效时间戳
-        int rInt = new Random().Next(); // 随机正整数
-
-        Uri objURL = new Uri(originUrl);
-        string path = objURL.GetComponents(UriComponents.Path, UriFormat.Unescaped);
-        string toBeHashed = $"/{path}-{ts}-{rInt}-{uid}-{privateKey}";
-
-        using (MD5 md5 = MD5.Create())
-        {
-            byte[] hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(toBeHashed));
-            string hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-
-            string authKey = $"{ts}-{rInt}-{uid}-{hash}";
-
-            var query = HttpUtility.ParseQueryString(objURL.Query);
-            query["auth_key"] = authKey;
-
-            UriBuilder uriBuilder = new UriBuilder(objURL)
-            {
-                Query = query.ToString()
-            };
-
-            return uriBuilder.ToString();
-        }
-    }
-
-    private static string SignUrlDefault(string originUrl)
-    {
-        string privateKey = "BVxB5aBpPa5ISeXf"; // 鉴权密钥，即用户在123云盘直链管理中设置的鉴权密钥
-        ulong uid = 1838918272; // 账号id，即用户在123云盘个人中心页面所看到的账号id
-        TimeSpan validDuration = TimeSpan.FromDays(1); // 链接签名有效期
-
-        string newUrl = SignUrl(originUrl, privateKey, uid, validDuration);
-
-        CurLogger.Information("Sign url: {newUrl}", newUrl);
-
-        return newUrl;
-    }
-
-    static void DownloadFileAsync(string url, string destinationPath)
-    {
-        using (WebClient client = new WebClient())
-        {
-            CurLogger.Information("Start downloading...");
-
-            // 添加下载进度事件处理
-            client.DownloadProgressChanged += (sender, e) =>
-            {
-                CurLogger.Information($"Downloading: {e.ProgressPercentage}%");
-            };
-
-            client.DownloadFile(new Uri(url), destinationPath);
-        }
-    }
-
-    private void DownloadByPathAndName(string filePath, string fileName, string downloadPath, string downloadFileName)
-    {
-        try
-        {
-            var directlink = GetDirectLinkByFilePathAndName(filePath, fileName);
-
-            if (!Directory.Exists(downloadPath))
-            {
-                Directory.CreateDirectory(downloadPath);
-            }
-
-            var downloadFilePath = Path.Join(downloadPath, downloadFileName);
-            var signedUrl = SignUrlDefault(directlink);
-            DownloadFileAsync(signedUrl, downloadFilePath);
-        }
-        catch (Exception e)
-        {
-            CurLogger.Error(e, "DownloadByPathAndName error");
-        }
-    }
-
     private void UserInit()
     {
         try
@@ -135,7 +45,7 @@ public partial class Config : ObservableObject
             var downloadPath = Path.Join(CurrentPardofelisAppDataPath, "Download", "Resources/ManSuiMusic");
             var fileName = "ManSuiMusicPreset.json";
 
-            DownloadByPathAndName("/directlink/Resources/ManSuiMusic", fileName, downloadPath, fileName);
+            Dl123Pan.DownloadByPathAndName("/directlink/Resources/ManSuiMusic", fileName, downloadPath, fileName);
 
             var preset =
                 JsonConvert.DeserializeObject<ManSuiMusicPreset>(File.ReadAllText(Path.Join(downloadPath, fileName)));
@@ -171,7 +81,14 @@ public partial class Config : ObservableObject
                 if (provider.Key)
                 {
                     var name = provider.Value + ".txt";
-                    DownloadByPathAndName("/directlink/Resources/ManSuiMusic", name, downloadPath, name);
+                    try
+                    {
+                        Dl123Pan.DownloadByPathAndName("/directlink/Resources/ManSuiMusic", name, downloadPath, name);
+                    }
+                    catch (Exception e)
+                    {
+                        CurLogger.Error(e, "UserInit error");
+                    }
                 }
             }
         }
@@ -269,7 +186,6 @@ public class SingPlugin
                     string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     Songs[fileNameWithoutExtension] = file; // 将歌曲名称和对应的文件路径存入字典
                 }
-
             }
             else
             {
@@ -309,10 +225,10 @@ public class SingPlugin
             bool bFind = false;
             foreach (var song in Songs)
             {
-                if(song.Key.Contains(songName))
+                if (song.Key.Contains(songName))
                 {
                     bFind = true;
-                    
+
                     // 如果有歌曲正在播放，先停止
                     if (isPlaying)
                     {
@@ -327,12 +243,12 @@ public class SingPlugin
                     return "歌曲开始播放了~";
                 }
             }
-            
-            if(!bFind)
+
+            if (!bFind)
             {
                 Config.CurLogger.Information("未找到该歌曲：{songName}", songName);
                 var message = "未找到该歌曲。推荐你几首歌曲：";
-Random random = new Random();
+                Random random = new Random();
                 List<string> songList = Songs.Keys.ToList(); // 将键转换为列表
                 int count = 0;
                 while (count < 10 && songList.Count > 0)
@@ -351,7 +267,7 @@ Random random = new Random();
 
                 return message += "你想选择那首";
             }
-            
+
             return "歌曲开始播放了~";
         }
         else
@@ -390,7 +306,7 @@ Random random = new Random();
 
                 return message += "你想选择那首";
             }
-            
+
             try
             {
                 string url = $"https://www.bilibili.com/video/{bvId}/";

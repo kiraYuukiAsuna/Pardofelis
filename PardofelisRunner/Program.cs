@@ -119,9 +119,42 @@ if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
     String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelName)
    )
 {
-    
-    var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.First();
+    try
+    {
+        BuitlinApiKeyConfig.FetchApiKeyInfo();
+    }catch(Exception e)
+    {
+        Console.WriteLine(e.Message);
+    }
 
+    if(BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count == 0)
+    {
+        Console.WriteLine("No buitlin api key found.");
+        return -1;
+    }
+    
+    var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
+
+    if (!buitlinApiKey.Enabled)
+    {
+        bool bFind = false;
+        for (int i = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count - 1; i >= 0; i--)
+        {
+            var api = BuitlinApiKeyConfig.BuitlinApiKeyInfos[i];
+            if (api.Enabled)
+            {
+                buitlinApiKey = api;
+                bFind = true;
+                break;
+            }
+        }
+
+        if (!bFind)
+        {
+            Console.WriteLine("No enabled buitlin api key found.");
+            return -1;
+        }
+    }
     
     builder.AddOpenAIChatCompletion(buitlinApiKey.ModelName,
         buitlinApiKey.ApiKey, "", "", new HttpClient()
@@ -129,16 +162,6 @@ if (String.IsNullOrEmpty(apiConfig.OnlineLlmCreateInfo.OnlineModelUrl) ||
             BaseAddress = new Uri(buitlinApiKey.Url),
             Timeout = TimeSpan.FromMinutes(3)
         });
-    /*builder.AddOpenAIChatCompletion("gpt-4o-mini",
-        "sk-O8uZWKkEzVHa2jIG54F8269a27354c668f09A546444c0bCc", "", "", new HttpClient()
-        {
-            BaseAddress = new Uri("http://127.0.0.1:14251/v1")
-        });*/
-    // builder.AddOpenAIChatCompletion("qwen-plus",
-    //     "sk-41705ee9bcb7418b881e978943f29b03", "", "", new HttpClient()
-    //     {
-    //         BaseAddress = new Uri("https://dashscope.aliyuncs.com/compatible-mode")
-    //     });
 }
 else
 {

@@ -1,6 +1,7 @@
-﻿using SingPlugin;
+﻿using CdnDownload;
+using SingPlugin;
 using ImageRecognitionPlugin;
 
-var plugin = new ImageRecognitionPlugin.ImageRecognitionPlugin();
-
-plugin.GetImageDescription();
+var downloadPath = Path.Join("Download", "Resources");
+Dl123Pan.DownloadByPathAndName("/directlink/Resources", "BuitlinApiKey.json",
+    downloadPath, "BuitlinApiKey.json");

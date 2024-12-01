@@ -32,7 +32,7 @@ Copy-Item "../build/PublishAllOutput/PardofelisUI" "../build/PublishRelease" -Re
 Copy-Item "../runtimes" "../build/PublishRelease/runtimes" -Recurse
 
 Copy-Item "../build/PublishAllOutput/EmailPlugin" "../build/PublishRelease/ToolCallPlugin/EmailPlugin" -Recurse
-Copy-Item "../build/PublishAllOutput/ImageRecognitionPlugin" "../build/PublishRelease/ToolCallPlugin/ImageRecognitionPlugin" -Recurse
+Copy-Item "../build/PublishAllOutput/ScrennRecognitionPlugin" "../build/PublishRelease/ToolCallPlugin/ScrennRecognitionPlugin" -Recurse
 Copy-Item "../build/PublishAllOutput/SingPlugin" "../build/PublishRelease/ToolCallPlugin/SingPlugin" -Recurse
 Copy-Item "../build/PublishAllOutput/WeatherFifteenDaysPlugin" "../build/PublishRelease/ToolCallPlugin/WeatherFifteenDaysPlugin" -Recurse
 Copy-Item "../build/PublishAllOutput/WeatherOneDayPlugin" "../build/PublishRelease/ToolCallPlugin/WeatherOneDayPlugin" -Recurse
