@@ -36,7 +36,7 @@ public partial class ExtraConfigPageViewModel : PageBase
 {
     [ObservableProperty] private AvaloniaList<TabViewModel> _tabs = [];
 
-    public ExtraConfigPageViewModel() : base("额外配置", MaterialIconKind.FileCog, int.MinValue)
+    public ExtraConfigPageViewModel() : base("插件配置", MaterialIconKind.FileCog, int.MinValue)
     {
         FunctionCallPluginLoader.Clear();
         foreach (var pluginFolder in Directory.GetDirectories(CommonConfig.ToolCallPluginRootPath))
@@ -55,48 +55,52 @@ public partial class ExtraConfigPageViewModel : PageBase
 
         foreach (var plugin in FunctionCallPluginLoader.PluginConfigs)
         {
-            StackPanel stackPanel;
+            StackPanel stackPanel = new ();
             try
             {
-                var instance = plugin.Type.Assembly.CreateInstance(plugin.Type.FullName);
-                if (instance == null)
+                if (plugin.Type.FullName != null)
                 {
-                    continue;
-                }
-
-                try
-                {
-                    instance.GetType().GetMethod("Init")?.Invoke(instance, new object[] { });
-                }
-                catch (Exception exception)
-                {
-                    Log.Error(exception, "Failed to init plugin {PluginFile}", plugin.PluginFile);
-                    DynamicUIConfig.GlobalDialogManager.CreateDialog()
-                        .WithTitle("错误！")
-                        .WithContent("初始化插件配置信息失败！" + exception.Message)
-                        .WithActionButton("确定", _ => { }, true)
-                        .TryShow();
-                }
-                
-                try
-                {
-                    var obj = (instance.GetType().GetMethod("ReadConfig")?.Invoke(instance, new object[] { }));
-                    if (obj != null)
+                    var instance = plugin.Type.Assembly.CreateInstance(plugin.Type.FullName);
+                    if (instance == null)
                     {
-                        instance = obj;
+                        continue;
                     }
-                }
-                catch (Exception exception)
-                {
-                    Log.Error(exception, "Failed to read config for {PluginFile}", instance.GetType().Name);
-                    DynamicUIConfig.GlobalDialogManager.CreateDialog()
-                        .WithTitle("错误！")
-                        .WithContent("读取插件配置信息失败！" + exception.Message)
-                        .WithActionButton("确定", _ => { }, true)
-                        .TryShow();
+
+                    try
+                    {
+                        instance.GetType().GetMethod("Init")?.Invoke(instance, new object[] { });
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Error(exception, "Failed to init plugin {PluginFile}", plugin.PluginFile);
+                        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                            .WithTitle("错误！")
+                            .WithContent("初始化插件配置信息失败！" + exception.Message)
+                            .WithActionButton("确定", _ => { }, true)
+                            .TryShow();
+                    }
+                
+                    try
+                    {
+                        var obj = (instance.GetType().GetMethod("ReadConfig")?.Invoke(instance, new object[] { }));
+                        if (obj != null)
+                        {
+                            instance = obj;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Error(exception, "Failed to read config for {PluginFile}", instance.GetType().Name);
+                        DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                            .WithTitle("错误！")
+                            .WithContent("读取插件配置信息失败！" + exception.Message)
+                            .WithActionButton("确定", _ => { }, true)
+                            .TryShow();
+                    }
+
+                    stackPanel = GenerateControls(instance, plugin);
                 }
 
-                stackPanel = GenerateControls(instance, plugin);
                 Tabs.Add(new TabViewModel(Path.GetFileName(plugin.PluginFile), stackPanel));
             }
             catch (Exception e)
@@ -126,7 +130,7 @@ public partial class ExtraConfigPageViewModel : PageBase
             var value = property.GetValue(model);
             var label = new TextBlock { Text = property.Name + ": " };
 
-            Control control = null;
+            Control control = new TextBox();
 
             if (property.PropertyType == typeof(string))
             {
@@ -148,7 +152,7 @@ public partial class ExtraConfigPageViewModel : PageBase
                 var checkBox = new CheckBox
                 {
                     Content = property.Name,  // 使用属性名作为 CheckBox 的标签
-                    IsChecked = (bool)property.GetValue(model)  // 设置初始状态
+                    IsChecked = (bool)(property.GetValue(model) ?? false)  // 设置初始状态
                 };
 
                 // 双向绑定

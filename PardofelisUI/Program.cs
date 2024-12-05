@@ -1,8 +1,6 @@
 ﻿using Avalonia;
 using ShowMeTheXaml;
 using System;
-using System.IO;
-using System.Text;
 using Avalonia.Dialogs;
 using Serilog;
 

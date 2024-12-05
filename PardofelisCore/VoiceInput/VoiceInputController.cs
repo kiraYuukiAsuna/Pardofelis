@@ -16,6 +16,9 @@ public class VoiceInputController
 
     private PortAudioSharp.Stream AudioStream;
 
+    private readonly object _lockObject = new object();
+    private bool isHotKeyPressed = false;
+    
     public VoiceInputController(VoiceInputCallback callback)
     {
         ModelRootPath = CommonConfig.VoiceModelRootPath;
@@ -89,7 +92,31 @@ public class VoiceInputController
         param.sampleFormat = SampleFormat.Float32;
         param.suggestedLatency = info.defaultLowInputLatency;
         param.hostApiSpecificStreamInfo = IntPtr.Zero;
-
+        
+        string voiceInputConfigPath = Path.Join(CommonConfig.ConfigRootPath, "ApplicationConfig/VoiceInputConfig.json");
+        var voiceInputConfig = VoiceInputConfig.ReadConfig(voiceInputConfigPath);
+        
+        KeyboardHookEntry.Hook.KeyDown += (sender, args) =>
+        {
+            if (args.Key == voiceInputConfig.HotKey)
+            {
+                lock (_lockObject)
+                {
+                    isHotKeyPressed = true;
+                }
+            }
+        };
+        KeyboardHookEntry.Hook.KeyUp += (sender, args) =>
+        {
+            if (args.Key == voiceInputConfig.HotKey)
+            {
+                lock (_lockObject)
+                {
+                    isHotKeyPressed = false;
+                }
+            }
+        };
+        
         float[] buffer = [];
 
         PortAudioSharp.Stream.Callback callback = (IntPtr input, IntPtr output,
@@ -99,6 +126,25 @@ public class VoiceInputController
             IntPtr userData
         ) =>
         {
+            bool hotKeyPressed;
+            lock (_lockObject)
+            {
+                hotKeyPressed = isHotKeyPressed;
+            }
+            
+            if (voiceInputConfig.IsPressKeyReceiveAudioInputEnabled)
+            {
+                if (!hotKeyPressed)
+                {
+                    int threshold = (int)(sampleRate * 0.2); // 0.2s
+                    if(buffer.Length <= threshold)
+                    {
+                        buffer = [];
+                        return StreamCallbackResult.Continue;
+                    }
+                }
+            }
+            
             float[] samples = new float[frameCount];
             Marshal.Copy(input, samples, 0, (Int32)frameCount);
 
@@ -164,3 +210,5 @@ public class VoiceInputController
         return new ResultWrap<string>(true, "Voice Input Service Start Successfully!");
     }
 }
+
+

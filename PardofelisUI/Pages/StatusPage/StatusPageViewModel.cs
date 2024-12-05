@@ -71,13 +71,13 @@ public partial class StatusPageViewModel : PageBase
         }
     }
 
-    [ObservableProperty] private AvaloniaList<string> _steps;
+    [ObservableProperty] private AvaloniaList<string> _steps = new();
 
     [ObservableProperty] private int _stepperIndex;
 
     [ObservableProperty] AvaloniaList<string> _modelParameterConfigList = [];
-    [ObservableProperty] private string _selectedModelParameterConfig;
-    [ObservableProperty] private string _selectedCharacterPresetConfig;
+    [ObservableProperty] private string _selectedModelParameterConfig = "";
+    [ObservableProperty] private string _selectedCharacterPresetConfig = "";
 
     [ObservableProperty] private SolidColorBrush _statusBrush = new SolidColorBrush(Color.FromRgb(33, 71, 192));
 
@@ -260,7 +260,7 @@ public partial class StatusPageViewModel : PageBase
     }
 
     [ObservableProperty] public AvaloniaList<string> _localModelFileNames = [];
-    [ObservableProperty] private string _selectedLocalModelFileName;
+    [ObservableProperty] private string _selectedLocalModelFileName = "";
 
     [RelayCommand]
     private void RescanConfig()
@@ -363,7 +363,7 @@ public partial class StatusPageViewModel : PageBase
         }
     }
 
-    private CancellationTokenSource CurrentCancellationToken;
+    private CancellationTokenSource CurrentCancellationToken = new CancellationTokenSource();
 
     private Thread idleAskThread;
 
@@ -379,7 +379,7 @@ public partial class StatusPageViewModel : PageBase
 
     DateTime LastInferenceTime;
 
-    private BlockingCollection<string> _messageQueue = new BlockingCollection<string>();
+    private BlockingCollection<string> _messageQueue = new();
     private Thread _messageProcessingThread;
 
     private Thread? ExternelApiServerThread;
@@ -409,20 +409,21 @@ public partial class StatusPageViewModel : PageBase
         _messageProcessingThread.Join();
     }
 
-    private async Task ProcessMessage(string message)
+    private Task ProcessMessage(string message)
     {
-        await onLlmMessageInput(message);
+        OnLlmMessageInput(message);
+        return Task.CompletedTask;
     }
 
     public void QueueMessage(string text)
     {
-        if (_messageQueue != null && !_messageQueue.IsAddingCompleted)
+        if (!_messageQueue.IsAddingCompleted)
         {
             _messageQueue.Add(text);
         }
     }
 
-    private async Task onLlmMessageInput(string text)
+    private void OnLlmMessageInput(string text)
     {
         if (string.IsNullOrEmpty(text))
         {
@@ -530,7 +531,9 @@ public partial class StatusPageViewModel : PageBase
         {
             try
             {
-                assistantMessage = result.Result.FirstOrDefault()?.Content;
+                var content = result.Result.FirstOrDefault()?.Content;
+                if (content != null)
+                    assistantMessage = content;
                 if (string.IsNullOrEmpty(assistantMessage))
                 {
                     return;
@@ -622,7 +625,7 @@ public partial class StatusPageViewModel : PageBase
 
         if (RunningState)
         {
-            Thread stopThread = new Thread(async () =>
+            Thread stopThread = new Thread(() =>
             {
                 RunCodeProtection = true;
 
@@ -1037,7 +1040,7 @@ public partial class StatusPageViewModel : PageBase
             {
                 StepperIndex = 7;
                 UpdateStatusColor(Color.FromRgb(117, 101, 192));
-                VoiceInputController = new(async (string text) => { QueueMessage(text); });
+                VoiceInputController = new((string text) => { QueueMessage(text); });
 
                 VoiceInputController.StartListening(CurrentCancellationToken);
             }
@@ -1125,8 +1128,14 @@ public partial class StatusPageViewModel : PageBase
             // 加载历史对话信息
             try
             {
-                string historyFilePath = Path.Join(CommonConfig.MemoryRootPath, "ChatHistory.json");
+                string historyFilePath = Path.Join(CommonConfig.PardofelisAppDataPath, "Memory", "ChatHistory.json");
                 ChatContent chatContent = new();
+
+                if (!Directory.Exists(Path.Join(CommonConfig.PardofelisAppDataPath, "Memory")))
+                {
+                    Directory.CreateDirectory(Path.Join(CommonConfig.PardofelisAppDataPath, "Memory"));
+                }
+                
                 if (!File.Exists(historyFilePath))
                 {
                     File.WriteAllText(historyFilePath,
@@ -1136,7 +1145,7 @@ public partial class StatusPageViewModel : PageBase
                 {
                     string historyJson = File.ReadAllText(historyFilePath);
                     var chatHistory = JsonConvert.DeserializeObject<ChatContent>(historyJson);
-                    if (chatHistory.Messages != null)
+                    if (chatHistory != null)
                     {
                         chatContent.Messages = chatHistory.Messages;
                     }
@@ -1281,12 +1290,12 @@ public partial class StatusPageViewModel : PageBase
         }
     }
 
-    [ObservableProperty] private string _infoBarTitle;
-    [ObservableProperty] private string _infoBarMessage;
-    [ObservableProperty] private Avalonia.Controls.Notifications.NotificationType _infoBarSeverity;
-    [ObservableProperty] private string _runButtonText;
-    [ObservableProperty] private string _historyTextBlock;
-    [ObservableProperty] private string _inputTextBox;
+    [ObservableProperty] private string _infoBarTitle = "";
+    [ObservableProperty] private string _infoBarMessage = "";
+    [ObservableProperty] private NotificationType _infoBarSeverity;
+    [ObservableProperty] private string _runButtonText = "";
+    [ObservableProperty] private string _historyTextBlock = "";
+    [ObservableProperty] private string _inputTextBox = "";
 
     [RelayCommand]
     private void Infer()
@@ -1331,7 +1340,7 @@ public partial class StatusPageViewModel : PageBase
 
 
     [RelayCommand]
-    private async Task ClearHistory()
+    private void ClearHistory()
     {
         ChatMessages.Clear();
         HistoryTextBlock = "";

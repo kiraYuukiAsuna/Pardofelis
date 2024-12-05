@@ -99,4 +99,8 @@
   <ItemGroup>
     <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.77-alpha" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Pages\SettingsPage\" />
+  </ItemGroup>
 </Project>

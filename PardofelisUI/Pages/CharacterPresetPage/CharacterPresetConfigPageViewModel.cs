@@ -10,29 +10,30 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 using PardofelisCore.Config;
+using Serilog;
 using SukiUI.Dialogs;
 
 namespace PardofelisUI.Pages.CharacterPresetPage;
 
 public partial class ExceptTextRegexExpressionsContentViewModel : ObservableObject
 {
-    [ObservableProperty] private string _regexExpression;
+    [ObservableProperty] private string _regexExpression = "";
 }
 
 public partial class EnabledPluginContentViewModel : ObservableObject
 {
-    [ObservableProperty] private string _plugininName;
+    [ObservableProperty] private string _plugininName= "";
 }
 
 public partial class HotZhWordsContentViewModel : ObservableObject
 {
-    [ObservableProperty] private string _word;
+    [ObservableProperty] private string _word= "";
 }
 
 public partial class HotRulesContentViewModel : ObservableObject
 {
-    [ObservableProperty] private string _left;
-    [ObservableProperty] private string _right;
+    [ObservableProperty] private string _left= "";
+    [ObservableProperty] private string _right= "";
 }
 
 public partial class CharacterPresetConfigPageViewModel : PageBase
@@ -324,91 +325,115 @@ public partial class CharacterPresetConfigPageViewModel : PageBase
     [RelayCommand]
     private async void ImportConfig()
     {
-        // Get top level from the current control. Alternatively, you can use Window reference instead.
-        var topLevel =
-            TopLevel.GetTopLevel(((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime)
-                .MainWindow);
-
-        // Start async operation to open the dialog.
-        var files = await topLevel?.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+        try
         {
-            Title = "选择配置文件",
-            AllowMultiple = false,
-            FileTypeFilter = new[] { ConfigFilePickerFileType }
-        });
+            // Get top level from the current control. Alternatively, you can use Window reference instead.
+            var topLevel =
+                TopLevel.GetTopLevel(((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime)
+                    .MainWindow);
 
-        if (files.Count == 0)
-        {
-            return;
-        }
+            // Start async operation to open the dialog.
+            var files = await topLevel?.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            {
+                Title = "选择配置文件",
+                AllowMultiple = false,
+                FileTypeFilter = new[] { ConfigFilePickerFileType }
+            });
 
-        if (File.Exists(m_ConfigRootPath + "/" + files[0].Name))
-        {
+            if (files.Count == 0)
+            {
+                return;
+            }
+
+            if (File.Exists(m_ConfigRootPath + "/" + files[0].Name))
+            {
+                DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                    .WithTitle("提示！")
+                    .WithContent("同名配置文件已经存在，导入失败!")
+                    .WithActionButton("确定", _ => { }, true)
+                    .TryShow();
+                return;
+            }
+
+            File.Copy(files[0].Path.LocalPath, m_ConfigRootPath + "/" + files[0].Name, true);
+
             DynamicUIConfig.GlobalDialogManager.CreateDialog()
                 .WithTitle("提示！")
-                .WithContent("同名配置文件已经存在，导入失败!")
+                .WithContent("导入配置文件： " + files[0].Path.LocalPath + " 成功!")
                 .WithActionButton("确定", _ => { }, true)
                 .TryShow();
-            return;
+            RescanConfig();
         }
-
-        File.Copy(files[0].Path.LocalPath, m_ConfigRootPath + "/" + files[0].Name, true);
-
-        DynamicUIConfig.GlobalDialogManager.CreateDialog()
-            .WithTitle("提示！")
-            .WithContent("导入配置文件： " + files[0].Path.LocalPath + " 成功!")
-            .WithActionButton("确定", _ => { }, true)
-            .TryShow();
-        RescanConfig();
+        catch (Exception e)
+        {
+            Log.Error("导入配置文件失败! 错误信息：" + e.Message);
+            DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                .WithTitle("提示！")
+                .WithContent("导入配置文件失败! 错误信息：" + e.Message)
+                .WithActionButton("确定", _ => { }, true)
+                .TryShow();
+        }
     }
 
     [RelayCommand]
     private async void ExportConfig()
     {
-        if (SelectedConfigFileName.Length == 0)
+        try
         {
+            if (SelectedConfigFileName.Length == 0)
+            {
+                DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                    .WithTitle("提示！")
+                    .WithContent("请选择要导出的配置文件!")
+                    .WithActionButton("确定", _ => { }, true)
+                    .TryShow();
+                return;
+            }
+
+            var configPath = m_ConfigRootPath + "/" + SelectedConfigFileName;
+            if (!File.Exists(configPath))
+            {
+                DynamicUIConfig.GlobalDialogManager.CreateDialog()
+                    .WithTitle("提示！")
+                    .WithContent("选中的配置文件不存在!导出失败！")
+                    .WithActionButton("确定", _ => { }, true)
+                    .TryShow();
+                return;
+            }
+
+            // Get top level from the current control. Alternatively, you can use Window reference instead.
+            var topLevel =
+                TopLevel.GetTopLevel(((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime)
+                    .MainWindow);
+
+            // Start async operation to open the dialog.
+            var folders = await topLevel?.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
+            {
+                AllowMultiple = false
+            });
+
+            if (folders.Count == 0)
+            {
+                return;
+            }
+
+            File.Copy(m_ConfigRootPath + "/" + SelectedConfigFileName,
+                folders[0].Path.LocalPath + "/" + Path.GetFileName((string?)SelectedConfigFileName), true);
             DynamicUIConfig.GlobalDialogManager.CreateDialog()
                 .WithTitle("提示！")
-                .WithContent("请选择要导出的配置文件!")
+                .WithContent("导入配置文件： " + SelectedConfigFileName + " 到目录 " + folders[0].Path.LocalPath + " 成功!")
                 .WithActionButton("确定", _ => { }, true)
                 .TryShow();
-            return;
         }
-
-        var configPath = m_ConfigRootPath + "/" + SelectedConfigFileName;
-        if (!File.Exists(configPath))
+        catch (Exception e)
         {
+            Log.Error("导出配置文件失败! 错误信息：" + e.Message);
             DynamicUIConfig.GlobalDialogManager.CreateDialog()
                 .WithTitle("提示！")
-                .WithContent("选中的配置文件不存在!导出失败！")
+                .WithContent("导出配置文件失败! 错误信息：" + e.Message)
                 .WithActionButton("确定", _ => { }, true)
                 .TryShow();
-            return;
         }
-
-        // Get top level from the current control. Alternatively, you can use Window reference instead.
-        var topLevel =
-            TopLevel.GetTopLevel(((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime)
-                .MainWindow);
-
-        // Start async operation to open the dialog.
-        var folders = await topLevel?.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
-        {
-            AllowMultiple = false
-        });
-
-        if (folders.Count == 0)
-        {
-            return;
-        }
-
-        File.Copy(m_ConfigRootPath + "/" + SelectedConfigFileName,
-            folders[0].Path.LocalPath + "/" + Path.GetFileName((string?)SelectedConfigFileName), true);
-        DynamicUIConfig.GlobalDialogManager.CreateDialog()
-            .WithTitle("提示！")
-            .WithContent("导入配置文件： " + SelectedConfigFileName + " 到目录 " + folders[0].Path.LocalPath + " 成功!")
-            .WithActionButton("确定", _ => { }, true)
-            .TryShow();
     }
 
     [RelayCommand]

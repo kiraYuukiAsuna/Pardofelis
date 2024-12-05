@@ -22,6 +22,7 @@ using PardofelisUI.Pages.About;
 using PardofelisUI.Pages.ExtraConfig;
 using PardofelisUI.Pages.HomePage;
 using PardofelisUI.Pages.LlmConfig;
+using PardofelisUI.Pages.SettingsPage;
 using PardofelisUI.Pages.StatusPage;
 using PardofelisUI.Pages.VoiceInputConfig;
 using PardofelisUI.Utilities;
@@ -39,7 +40,7 @@ namespace PardofelisUI;
 public partial class MainWindowViewModel : PageBase
 {
     [ObservableProperty]
-    private DynamicUIConfig _dynamicUIConfig;
+    private DynamicUIConfig _dynamicUiConfig = new();
 
     public void LoadPages()
     {
@@ -52,9 +53,10 @@ public partial class MainWindowViewModel : PageBase
             new BertVits2ConfigPageViewModel(),
             new VoiceInputConfigPageViewModel(),
             new AboutPageViewModel(),
-            new ExtraConfigPageViewModel()
+            new ExtraConfigPageViewModel(),
+            new SettingsPageViewModel()
         };
-        _activePage = Pages[0];
+        ActivePage = Pages[0];
 
         _pageNavigationService.NavigationRequested += pageType =>
         {

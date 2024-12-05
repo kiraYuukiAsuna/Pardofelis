@@ -1,0 +1,19 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:SettingsPage="clr-namespace:PardofelisUI.Pages.SettingsPage"
+             xmlns:controls="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             x:DataType="SettingsPage:SettingsPageViewModel"
+             x:Class="PardofelisUI.Pages.SettingsPage.SettingsPage">
+    <controls:GlassCard Margin="40"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+        <controls:GroupBox Header="功能开发中...">
+            <StackPanel>
+
+            </StackPanel>
+        </controls:GroupBox>
+    </controls:GlassCard>
+</UserControl>

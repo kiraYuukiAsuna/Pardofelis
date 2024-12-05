@@ -15,24 +15,24 @@ public partial class StatusPage : UserControl
 
     private void InputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        
         if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
-            var textBox = sender as TextBox;
-            if (textBox != null)
+            if (sender is TextBox textBox)
             {
-                string text = textBox.Text;
-                var viewModel = this.DataContext as StatusPageViewModel;
-                if (viewModel != null)
+                if (textBox.Text != null)
                 {
-                    viewModel.HandleEnterKeyCommand.Execute(text);
-                    e.Handled = true; // 阻止事件继续传播
+                    string text = textBox.Text;
+                    if (this.DataContext is StatusPageViewModel viewModel)
+                    {
+                        viewModel.HandleEnterKeyCommand.Execute(text);
+                        e.Handled = true; // 阻止事件继续传播
+                    }
                 }
             }
-        }else if(e.Key == Key.Enter)
+        }
+        else if (e.Key == Key.Enter)
         {
-            var textBox = sender as TextBox;
-            if (textBox != null)
+            if (sender is TextBox textBox)
             {
                 textBox.Text += "\n";
                 textBox.CaretIndex = textBox.Text.Length;
@@ -42,10 +42,12 @@ public partial class StatusPage : UserControl
 
     private void TextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
-        var textBox = sender as TextBox;
-        if (textBox != null)
+        if (sender is TextBox textBox)
         {
-            textBox.CaretIndex = textBox.Text.Length;
+            if (textBox.Text != null)
+            {
+                textBox.CaretIndex = textBox.Text.Length;
+            }
         }
     }
 }

@@ -6,6 +6,6 @@ namespace PardofelisUI.Pages.About;
 public partial class AboutPageViewModel() : PageBase("关于", MaterialIconKind.About, int.MinValue)
 {
     [ObservableProperty]
-    private DynamicUIConfig _dynamicUIConfig;
+    private DynamicUIConfig _dynamicUiConfig = new();
 
 }

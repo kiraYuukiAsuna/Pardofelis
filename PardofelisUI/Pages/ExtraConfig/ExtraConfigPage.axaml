@@ -9,7 +9,7 @@
              x:Class="PardofelisUI.Pages.ExtraConfig.ExtraConfigPage">
 
     <ScrollViewer VerticalScrollBarVisibility="Hidden" Margin="15">
-        <controls:GroupBox Header="额外配置">
+        <controls:GroupBox Header="插件配置">
             <StackPanel Orientation="Vertical">
                 <TabControl ItemsSource="{Binding Tabs}">
                     <TabControl.ItemTemplate>

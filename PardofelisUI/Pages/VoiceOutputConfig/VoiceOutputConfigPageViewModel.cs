@@ -20,7 +20,7 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
 {
     private string TTSConfigPath;
 
-    [ObservableProperty] private DynamicUIConfig _dynamicUIConfig;
+    [ObservableProperty] private DynamicUIConfig _dynamicUiConfig = new();
 
     public VoiceOutputConfigPageViewModel() : base("TTS语音输出配置", MaterialIconKind.FileCog, int.MinValue)
     {
@@ -31,15 +31,15 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
 
     [ObservableProperty] private int _id;
     [ObservableProperty] private AvaloniaList<string> _ttsModelNameList = new();
-    [ObservableProperty] private string _currentTTSModelName;
-    [ObservableProperty] private string _lang;
+    [ObservableProperty] private string _currentTTSModelName = "";
+    [ObservableProperty] private string _lang = "";
     [ObservableProperty] private double _length;
     [ObservableProperty] private double _noise;
     [ObservableProperty] private double _noisew;
     [ObservableProperty] private double _sdpRatio;
     [ObservableProperty] private int _segmentSize;
-    [ObservableProperty] private string _text;
-    [ObservableProperty] private string _audioName;
+    [ObservableProperty] private string _text = "";
+    [ObservableProperty] private string _audioName = "";
 
     [RelayCommand]
     private void ReloadConfig()
@@ -155,7 +155,7 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
     [ObservableProperty] private bool _runCodeProtection;
 
     private PythonInstance? PythonInstance;
-    private VoiceOutputController? VoiceOutputController;
+    private VoiceOutputController VoiceOutputController;
 
     private CancellationTokenSource CurrentCancellationToken = new();
 
@@ -177,7 +177,7 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
 
         if (RunningState)
         {
-            Thread stopThread = new Thread(async () =>
+            Thread stopThread = new Thread(() =>
             {
                 RunCodeProtection = true;
 
@@ -209,7 +209,7 @@ public partial class VoiceOutputConfigPageViewModel : PageBase
             return;
         }
 
-        Thread startThread = new Thread(async () =>
+        Thread startThread = new Thread(() =>
         {
             RunCodeProtection = true;
 

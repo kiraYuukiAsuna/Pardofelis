@@ -2,6 +2,7 @@
 using Avalonia.Interactivity;
 using PardofelisCore.Config;
 using PardofelisCore.Logger;
+using PardofelisCore.Util;
 using PardofelisUI.Pages.StatusPage;
 using Serilog;
 using SukiUI.Controls;
@@ -49,6 +50,7 @@ public partial class MainWindow : SukiWindow
         
         model.LoadPages();
 
+        KeyboardHookEntry.RunHookInOtherThread();
     }
 
     private void MenuItem_OnClick(object? sender, RoutedEventArgs e)
@@ -61,16 +63,18 @@ public partial class MainWindow : SukiWindow
 
     private void OnMainWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        foreach (var page in (DataContext as MainWindowViewModel).Pages)
-        {
-            switch (page)
+        var avaloniaList = (DataContext as MainWindowViewModel)?.Pages;
+        if (avaloniaList != null)
+            foreach (var page in avaloniaList)
             {
-                case StatusPageViewModel statusPageViewModel:
+                switch (page)
                 {
-                    statusPageViewModel.StopIfRunning();
-                    break;
+                    case StatusPageViewModel statusPageViewModel:
+                    {
+                        statusPageViewModel.StopIfRunning();
+                        break;
+                    }
                 }
             }
-        }
     }
 }
