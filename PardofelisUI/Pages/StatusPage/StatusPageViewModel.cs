@@ -423,6 +423,8 @@ public partial class StatusPageViewModel : PageBase
         }
     }
 
+    bool IsUsingIntergretedApiKey = false;
+    
     private void OnLlmMessageInput(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -442,27 +444,32 @@ public partial class StatusPageViewModel : PageBase
         List<KeyValuePair<string, string>> lastlastvectorSearch = new();
         List<KeyValuePair<string, string>> lastvectorSearch = new();
         List<KeyValuePair<string, string>> vectorSearch = new();
-        try
+
+        if (IsUsingIntergretedApiKey)
         {
-            if (ChatMessages.Count >= 2)
+            try
             {
-                var lastlastMessage = ChatMessages[ChatMessages.Count - 2].ToString();
+                if (ChatMessages.Count >= 2)
+                {
+                    var lastlastMessage = ChatMessages[ChatMessages.Count - 2].ToString();
 
-                var lastMessage = ChatMessages[ChatMessages.Count - 1].ToString();
+                    var lastMessage = ChatMessages[ChatMessages.Count - 1].ToString();
 
-                lastlastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastlastMessage).GetAwaiter()
-                    .GetResult();
+                    lastlastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastlastMessage).GetAwaiter()
+                        .GetResult();
 
-                lastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastMessage).GetAwaiter().GetResult();
+                    lastvectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", lastMessage).GetAwaiter()
+                        .GetResult();
+                }
+
+                vectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", text).GetAwaiter().GetResult();
             }
-
-            vectorSearch = Rag.VectorSearch(SemanticTextMemory, "Memory", text).GetAwaiter().GetResult();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e.Message);
-            MessageBoxUtil.ShowMessageBox("查询向量数据库失败! 错误信息：" + e.Message, "确定")
-                .GetAwaiter().GetResult();
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                MessageBoxUtil.ShowMessageBox("查询向量数据库失败! 错误信息：" + e.Message, "确定")
+                    .GetAwaiter().GetResult();
+            }
         }
 
         Log.Information("Start build system prompt.");
@@ -495,7 +502,7 @@ public partial class StatusPageViewModel : PageBase
             ChatSystemPrompt = systemPrompt,
             Temperature = 0.0f,
         };
-        
+
         Log.Information("\n" + text);
         ChatMessages.AddUserMessage(text);
 
@@ -600,12 +607,15 @@ public partial class StatusPageViewModel : PageBase
                 .GetAwaiter().GetResult();
         }
 
-        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", text,
-                $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.YourName}）] [对话人({m_CurrentCharacterPreset.Name}）]：")
-            .GetAwaiter().GetResult();
-        Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", assistantMessage,
-                $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.Name}）] [对话人({m_CurrentCharacterPreset.YourName}）]：")
-            .GetAwaiter().GetResult();
+        if (IsUsingIntergretedApiKey)
+        {
+            Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", text,
+                    $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.YourName}）] [对话人({m_CurrentCharacterPreset.Name}）]：")
+                .GetAwaiter().GetResult();
+            Rag.InsertTextChunkAsync(SemanticTextMemory, "Memory", assistantMessage,
+                    $"{DateTime.Now.ToString()} [说话人({m_CurrentCharacterPreset.Name}）] [对话人({m_CurrentCharacterPreset.YourName}）]：")
+                .GetAwaiter().GetResult();
+        }
     }
 
 
@@ -811,7 +821,7 @@ public partial class StatusPageViewModel : PageBase
             Log.Information("Start vector database.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 1;
-            
+
             try
             {
                 BuitlinApiKeyConfig.FetchApiKeyInfo();
@@ -823,14 +833,16 @@ public partial class StatusPageViewModel : PageBase
                         "确定")
                     .GetAwaiter().GetResult();
             }
+
             var buitlinApiKey = BuitlinApiKeyConfig.BuitlinApiKeyInfos.Last();
-            
+
             var memoryBuilder = new MemoryBuilder();
-            memoryBuilder.WithOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "", new HttpClient()
-            {
-                BaseAddress = new Uri(buitlinApiKey.Url),
-                Timeout = TimeSpan.FromMinutes(3)
-            });
+            memoryBuilder.WithOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "",
+                new HttpClient()
+                {
+                    BaseAddress = new Uri(buitlinApiKey.Url),
+                    Timeout = TimeSpan.FromMinutes(3)
+                });
 
             IMemoryStore memoryStore =
                 await SqliteMemoryStore.ConnectAsync(Path.Join(CommonConfig.MemoryRootPath, "MemStore.db"));
@@ -843,26 +855,28 @@ public partial class StatusPageViewModel : PageBase
             StepperIndex = 2;
             PythonInstance = new PythonInstance(CommonConfig.PythonRootPath);
 
-            try
+            if (IsUsingIntergretedApiKey)
             {
-                var queryResult = SemanticTextMemory.SearchAsync("Memory", "你好！", 1);
-                await foreach (var item in queryResult)
+                try
                 {
-                    Log.Information("Memory search result test: {queryResult}", item.Metadata.Text);
+                    var queryResult = SemanticTextMemory.SearchAsync("Memory", "你好！", 1);
+                    await foreach (var item in queryResult)
+                    {
+                        Log.Information("Memory search result test: {queryResult}", item.Metadata.Text);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e.Message);
+                    MessageBoxUtil.ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
                 }
             }
-            catch (Exception e)
-            {
-                Log.Error(e.Message);
-                MessageBoxUtil.ShowMessageBox("启动向量数据库失败! 错误信息：" + e.Message, "确定").GetAwaiter().GetResult();
-            }
-            
-            
+
             // 加载Embedding模型 //TODO: Remove this step
             Log.Information("Load embedding model.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 3;
-            
+
 
             // ExternalApiServer
             Log.Information("Start external api server.");
@@ -928,8 +942,9 @@ public partial class StatusPageViewModel : PageBase
                 Log.Error(e.Message);
                 MessageBoxUtil.ShowMessageBox(e.Message, "确定").GetAwaiter().GetResult();
             }
-            
+
             // 连接大语言模型
+            IsUsingIntergretedApiKey = false;
             Log.Information("Connect to large language model.");
             UpdateStatusColor(Color.FromRgb(117, 101, 192));
             StepperIndex = 6;
@@ -939,6 +954,7 @@ public partial class StatusPageViewModel : PageBase
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelApiKey) ||
                     String.IsNullOrEmpty(m_CurrentModelParameter.OnlineLlmCreateInfo.OnlineModelName))
                 {
+                    IsUsingIntergretedApiKey = true;
                     if (BuitlinApiKeyConfig.BuitlinApiKeyInfos.Count == 0)
                     {
                         MessageBoxUtil.ShowMessageBox(
@@ -977,7 +993,7 @@ public partial class StatusPageViewModel : PageBase
                                 BaseAddress = new Uri(buitlinApiKey.Url),
                                 Timeout = TimeSpan.FromMinutes(3)
                             });
-                        
+
                         MessageBoxUtil.ShowMessageBox(
                                 "注意！当前使用在线模式但选中的配置文件并未完整提供有关在线大模型的全部信息{在线大模型请求地址，Apikey密钥，使用的在线模型名称}，当前程序中内嵌了一个默认的在线模型（gpt-4o-mini），你可以用此进行体验但我们不保证该默认提供的Api长期有效！欢迎捐赠以便维持在线模型的使用！",
                                 "我明白上述信息")
@@ -993,12 +1009,16 @@ public partial class StatusPageViewModel : PageBase
                             Timeout = TimeSpan.FromMinutes(3)
                         });
                 }
-                
-                builder.AddOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "", "",new HttpClient()
+
+                if (IsUsingIntergretedApiKey)
                 {
-                    BaseAddress = new Uri(buitlinApiKey.Url),
-                    Timeout = TimeSpan.FromMinutes(3)
-                });
+                    builder.AddOpenAITextEmbeddingGeneration("text-embedding-ada-002", buitlinApiKey.ApiKey, "", "",
+                        new HttpClient()
+                        {
+                            BaseAddress = new Uri(buitlinApiKey.Url),
+                            Timeout = TimeSpan.FromMinutes(3)
+                        });
+                }
             }
             else if (m_CurrentModelParameter.ModelType == ModelType.Local)
             {
@@ -1021,11 +1041,13 @@ public partial class StatusPageViewModel : PageBase
 
                 await testLlmResult;
 
-
-                ITextEmbeddingGenerationService embeddingService =
-                    SemanticKernel.GetRequiredService<ITextEmbeddingGenerationService>();
-                var embedding = embeddingService.GenerateEmbeddingAsync("你好");
-                await embedding;
+                if (IsUsingIntergretedApiKey)
+                {
+                    ITextEmbeddingGenerationService embeddingService =
+                        SemanticKernel.GetRequiredService<ITextEmbeddingGenerationService>();
+                    var embedding = embeddingService.GenerateEmbeddingAsync("你好");
+                    await embedding;
+                }
             }
             catch (Exception e)
             {
@@ -1135,7 +1157,7 @@ public partial class StatusPageViewModel : PageBase
                 {
                     Directory.CreateDirectory(Path.Join(CommonConfig.PardofelisAppDataPath, "Memory"));
                 }
-                
+
                 if (!File.Exists(historyFilePath))
                 {
                     File.WriteAllText(historyFilePath,
@@ -1253,7 +1275,7 @@ public partial class StatusPageViewModel : PageBase
 
                 pluginInstances.Add(process);
             }
-            
+
 
             // 启动成功
             InfoBarTitle = "当前状态：启动成功！\n";

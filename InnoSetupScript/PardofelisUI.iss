@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ManSuiAiAssistant"
-#define MyAppVersion "0.4.6"
+#define MyAppVersion "0.4.7"
 #define MyAppPublisher "kiraYuukiAsuna"
 #define MyAppURL "https://space.bilibili.com/25594943"
 #define MyAppExeName "满穗AI助手.exe"
