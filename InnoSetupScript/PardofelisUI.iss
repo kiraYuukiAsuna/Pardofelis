@@ -2,10 +2,16 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ManSuiAiAssistant"
-#define MyAppVersion "0.4.7"
 #define MyAppPublisher "kiraYuukiAsuna"
 #define MyAppURL "https://space.bilibili.com/25594943"
 #define MyAppExeName "满穗AI助手.exe"
+
+#define MyAppVersion GetVersionNumbersString("../build/PublishRelease/满穗AI助手.exe")
+#if MyAppVersion == ""
+    #error "Warning: Version not found"
+#else
+    #pragma message "Version found: " + MyAppVersion
+#endif
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -29,6 +35,14 @@ Compression=lzma2/fast
 SolidCompression=yes
 InternalCompressLevel=fast
 WizardStyle=modern
+; 额外的版本信息
+VersionInfoVersion={#MyAppVersion}
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription="kiraYuukiAsuna"
+VersionInfoCopyright="© 2024 kiraYuukiAsuna"
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+VersionInfoProductTextVersion={#MyAppVersion}
 
 [Languages]
 Name: "chinese"; MessagesFile: "Chinese.isl"
