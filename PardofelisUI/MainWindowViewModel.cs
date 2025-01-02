@@ -39,8 +39,9 @@ namespace PardofelisUI;
 
 public partial class MainWindowViewModel : PageBase
 {
-    [ObservableProperty]
-    private DynamicUIConfig _dynamicUiConfig = new();
+    [ObservableProperty] private DynamicUIConfig _dynamicUiConfig = new();
+
+    [ObservableProperty] private string _appTitle = "满穗AI助手 - v" + ThisAssembly.AssemblyInformationalVersion;
 
     public void LoadPages()
     {
@@ -65,11 +66,11 @@ public partial class MainWindowViewModel : PageBase
             ActivePage = page;
         };
     }
-    
+
     public MainWindowViewModel() : base("满穗AI助手", MaterialIconKind.Home)
-    {        
+    {
         _theme = SukiTheme.GetInstance();
-        
+
         ColorThemes = _theme.ColorThemes;
         BaseTheme = _theme.ActiveBaseTheme;
 
@@ -93,7 +94,6 @@ public partial class MainWindowViewModel : PageBase
                 .WithActionButton("确定", _ => { }, true)
                 .TryShow();
         };
-
     }
 
     public static void OpenUrlInternal(string url)
@@ -109,13 +109,13 @@ public partial class MainWindowViewModel : PageBase
     [RelayCommand]
     private static void OpenUrl(string url) => OpenUrlInternal(url);
 
-    [ObservableProperty] 
-    private IAvaloniaList<PageBase> _pages=new AvaloniaList<PageBase>();
+    [ObservableProperty] private IAvaloniaList<PageBase> _pages = new AvaloniaList<PageBase>();
     [ObservableProperty] private PageBase? _activePage;
 
     private PageNavigationService _pageNavigationService = new();
 
-    [ObservableProperty] private IAvaloniaReadOnlyList<SukiColorTheme> _colorThemes=new AvaloniaList<SukiColorTheme>();
+    [ObservableProperty]
+    private IAvaloniaReadOnlyList<SukiColorTheme> _colorThemes = new AvaloniaList<SukiColorTheme>();
 
     [ObservableProperty] private ThemeVariant _baseTheme;
     [ObservableProperty] private bool _animationsEnabled;
