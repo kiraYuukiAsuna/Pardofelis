@@ -8,15 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EPPlus" Version="7.5.1" />
-    <PackageReference Include="MailKit" Version="4.8.0" />
+    <PackageReference Include="EPPlus" Version="7.5.2" />
+    <PackageReference Include="MailKit" Version="4.9.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.31.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Sqlite" Version="1.31.0-preview" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Sqlite" Version="1.32.0-preview" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.77-alpha" />
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.7.112" />
   </ItemGroup>
 
 </Project>
